@@ -1,4 +1,4 @@
-# TODO — Slyden
+﻿# TODO — Slyden
 
 Atualizar este arquivo a cada etapa concluída ou nova ideia.
 
@@ -96,7 +96,7 @@ Direção visual: tema escuro no estilo dos aplicativos Adobe. Maquete aprovada 
 - [x] Efeito começa já no primeiro quadro (curva quase linear) e intensidade mínima de 1% (antes 5%)
 - [x] Seletor de cor completo ("Mais cores…": espectro, paleta, sliders e hexadecimal)
 - [x] Modos da música (aba Padrão > Música): "Ajustar os slides à música" (padrão; espalha as fotos pela música toda, trocas nas batidas, vale com ritmo Automático) e "Cortar a música onde os slides acabam"; fade-in e fade-out da música (0–10 s) na exportação; 174 testes
-- [ ] Prévia animada ainda não aplica o fade-in/out da música (só a exportação)
+- [x] Segundos por foto (sem música) digitados livremente (0,5 a 120 s), não mais opções fixas`n- [ ] Prévia animada ainda não aplica o fade-in/out da música (só a exportação)
 - [ ] Render: 4K ainda ~10 quadros/s (sombra custa ~40%); avaliar sombra pré-calculada, reduzir fotos grandes antes do desenho, codificador de hardware
 - [ ] Cor de fundo diferente por foto
 - [ ] Abrir projeto `.slyden` de qualquer lugar (Arquivo > Abrir); mover/alterar a pasta de um projeto existente
@@ -117,3 +117,4 @@ Direção visual: tema escuro no estilo dos aplicativos Adobe. Maquete aprovada 
 - [ ] Música: manter por conta do usuário; depois avaliar catálogo licenciado (perguntar por escrito ao fornecedor se pode embutir no app)
 - [ ] Assinatura/licença e instalador (por último)
 - [ ] Criar repositório remoto no GitHub e enviar
+

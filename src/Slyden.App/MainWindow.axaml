@@ -210,9 +210,13 @@
                 <Grid ColumnDefinitions="*,140">
                   <TextBlock Classes="dim" VerticalAlignment="Center" Text="Sem música (telão)" />
                   <ComboBox Grid.Column="1" x:Name="SecondsBox" HorizontalAlignment="Stretch" SelectedIndex="0">
-                    <ComboBoxItem>Pelas batidas (BPM)</ComboBoxItem><ComboBoxItem>5 s por foto</ComboBoxItem>
-                    <ComboBoxItem>8 s por foto</ComboBoxItem><ComboBoxItem>10 s por foto</ComboBoxItem>
+                    <ComboBoxItem>Pelas batidas (BPM)</ComboBoxItem><ComboBoxItem>Segundos por foto</ComboBoxItem>
                   </ComboBox>
+                </Grid>
+                <Grid x:Name="SecondsRow" ColumnDefinitions="*,140" IsVisible="False">
+                  <TextBlock Classes="dim" VerticalAlignment="Center" Text="Segundos por foto" />
+                  <NumericUpDown Grid.Column="1" x:Name="SecondsValue" Minimum="0.5" Maximum="120" Increment="0.5"
+                                 FormatString="0.##" Value="5" HorizontalAlignment="Stretch" />
                 </Grid>
                 <TextBlock Classes="h" Text="MÚSICA" />
                 <ComboBox x:Name="MusicModeBox" HorizontalAlignment="Stretch" SelectedIndex="0">

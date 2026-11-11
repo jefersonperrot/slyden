@@ -242,7 +242,16 @@ public partial class MainWindow : Window
             FadeOutValue.Text = Seconds(FadeOutSlider.Value);
             EditDefault(() => _cfg.AudioFadeOut = FadeOutSlider.Value);
         };
-        SecondsBox.SelectionChanged += (_, _) => EditDefault(() => _cfg.SecondsPerPhoto = SecondsBox.SelectedIndex switch { 1 => 5, 2 => 8, 3 => 10, _ => null });
+        SecondsBox.SelectionChanged += (_, _) =>
+        {
+            SecondsRow.IsVisible = SecondsBox.SelectedIndex == 1;
+            EditDefault(() => _cfg.SecondsPerPhoto = SecondsBox.SelectedIndex == 1 ? SecondsValue.Value is { } v ? (double)v : 5 : null);
+        };
+        SecondsValue.ValueChanged += (_, e) =>
+        {
+            if (SecondsBox.SelectedIndex != 1 || e.NewValue is not { } v || v <= 0) return;
+            EditDefault(() => _cfg.SecondsPerPhoto = (double)v);
+        };
 
         TextList.SelectionChanged += (_, _) => LoadTextEditor();
         AddTextButton.Click += (_, _) => AddText();
@@ -443,7 +452,9 @@ public partial class MainWindow : Window
             BackgroundColorView.Color = color;
         }
         BeatsBox.SelectedIndex = _cfg.BeatsPerPhoto switch { 2 => 1, 4 => 2, 8 => 3, _ => 0 };
-        SecondsBox.SelectedIndex = _cfg.SecondsPerPhoto switch { 5 => 1, 8 => 2, 10 => 3, _ => 0 };
+        SecondsBox.SelectedIndex = _cfg.SecondsPerPhoto is null ? 0 : 1;
+        SecondsRow.IsVisible = _cfg.SecondsPerPhoto is not null;
+        if (_cfg.SecondsPerPhoto is { } secs) SecondsValue.Value = (decimal)secs;
         MusicModeBox.SelectedIndex = _cfg.MusicMode == MusicMode.FitSlides ? 1 : 0;
         FadeInSlider.Value = _cfg.AudioFadeIn;
         FadeOutSlider.Value = _cfg.AudioFadeOut;
