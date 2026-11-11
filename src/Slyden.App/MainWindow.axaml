@@ -233,7 +233,7 @@
           </StackPanel>
         </Grid>
         <Grid>
-        <ListBox x:Name="SlideList" Height="132" Background="Transparent" SelectionMode="Multiple,Toggle"
+        <ListBox x:Name="SlideList" Height="132" Background="Transparent" SelectionMode="Multiple"
                  ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Disabled">
           <ListBox.ItemsPanel>
             <ItemsPanelTemplate><StackPanel Orientation="Horizontal" /></ItemsPanelTemplate>

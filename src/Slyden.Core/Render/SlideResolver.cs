@@ -10,7 +10,8 @@ public sealed record ResolvedSlide(
     string File, EffectKind Effect, double Intensity, TransitionKind Transition,
     double[]? Zoom = null, double[][]? Center = null,
     int Length = 1, double Dim = 0, IReadOnlyList<TextBlock>? Texts = null,
-    double Scale = 1, BackgroundKind Background = BackgroundKind.Blur);
+    double Scale = 1, BackgroundKind Background = BackgroundKind.Blur,
+    double BackgroundBlur = 1, double BackgroundDim = 0.1);
 
 public static class SlideResolver
 {
@@ -27,7 +28,8 @@ public static class SlideResolver
             result.Add(new ResolvedSlide(p.File, p.Effect ?? auto, p.Intensity ?? d.Intensity,
                                          p.Transition ?? d.Transition, p.Zoom, p.Center,
                                          p.Length ?? 1, p.Dim ?? 0, p.Texts ?? [],
-                                         p.Scale ?? d.Scale, p.Background ?? d.Background));
+                                         p.Scale ?? d.Scale, p.Background ?? d.Background,
+                                         d.BackgroundBlur, d.BackgroundDim));
         }
         return result;
     }

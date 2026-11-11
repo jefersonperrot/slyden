@@ -28,14 +28,15 @@ internal sealed class SlideRenderer : IDisposable
         var layout = SlideGeometry.Layout(source.Width, source.Height, frameWidth, frameHeight);
         var motion = SlideResolver.MotionOf(slide, source.Width, source.Height, (double)layout.Width / layout.Height);
         return new SlideRenderer(source, motion, frameWidth, frameHeight, slide.Dim, texts, painter,
-                                 slide.Scale, slide.Background == Config.BackgroundKind.Blur);
+                                 slide.Scale, slide.Background == Config.BackgroundKind.Blur,
+                                 slide.BackgroundBlur, slide.BackgroundDim);
     }
 
     /// <param name="scale">Tamanho da foto no quadro (0,3 a 1); abaixo de 1 sobra borda preenchida pelo fundo.</param>
     /// <param name="blurBackground">Fundo = a própria foto desfocada; falso = preto.</param>
     public SlideRenderer(SKBitmap source, Motion motion, int frameWidth, int frameHeight,
                          double dim = 0, IReadOnlyList<ActiveText>? texts = null, TextPainter? painter = null,
-                         double scale = 1, bool blurBackground = true)
+                         double scale = 1, bool blurBackground = true, double backgroundBlur = 1, double backgroundDim = 0.1)
     {
         _source = source;
         _motion = motion;
@@ -50,7 +51,7 @@ internal sealed class SlideRenderer : IDisposable
         _needsBackground = !_layout.Fill || _scale < 1;
         if (_needsBackground && blurBackground)
         {
-            _background = BuildBackground(source, frameWidth, frameHeight);
+            _background = BuildBackground(source, frameWidth, frameHeight, backgroundBlur, backgroundDim);
             _backgroundImage = SKImage.FromBitmap(_background);
         }
     }
@@ -98,7 +99,9 @@ internal sealed class SlideRenderer : IDisposable
     }
 
     /// <summary>Fundo para fotos que não preenchem o quadro: a própria foto, ampliada, desfocada e escurecida.</summary>
-    private static SKBitmap BuildBackground(SKBitmap source, int width, int height)
+    /// <param name="blur">Multiplica o desfoque padrão (1 = padrão).</param>
+    /// <param name="dim">Quanto escurece o fundo (0 = nada, 0,5 = metade).</param>
+    private static SKBitmap BuildBackground(SKBitmap source, int width, int height, double blur, double dim)
     {
         int sw = Math.Max(1, width / 10), sh = Math.Max(1, height / 10);
 
@@ -116,16 +119,16 @@ internal sealed class SlideRenderer : IDisposable
         using var blurred = new SKBitmap(sw, sh, SKColorType.Bgra8888, SKAlphaType.Premul);
         using (var c = new SKCanvas(blurred))
         using (var smallImage = SKImage.FromBitmap(small))
-        using (var paint = new SKPaint { ImageFilter = SKImageFilter.CreateBlur(6, 6, SKShaderTileMode.Clamp) })
+        using (var paint = new SKPaint { ImageFilter = SKImageFilter.CreateBlur((float)(6 * blur), (float)(6 * blur), SKShaderTileMode.Clamp) })
             c.DrawImage(smallImage, 0, 0, Linear, paint);
 
         var background = new SKBitmap(width, height, SKColorType.Bgra8888, SKAlphaType.Premul);
         using (var c = new SKCanvas(background))
         using (var img = SKImage.FromBitmap(blurred))
-        using (var dark = new SKPaint { Color = new SKColor(0, 0, 0, 115) }) // ~45% mais escuro
+        using (var dark = new SKPaint { Color = new SKColor(0, 0, 0, (byte)Math.Round(Math.Clamp(dim, 0, 1) * 255)) })
         {
             c.DrawImage(img, SKRect.Create(width, height), Linear);
-            c.DrawRect(SKRect.Create(width, height), dark);
+            if (dim > 0) c.DrawRect(SKRect.Create(width, height), dark);
         }
         return background;
     }

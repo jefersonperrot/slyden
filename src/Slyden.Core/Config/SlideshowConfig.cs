@@ -27,6 +27,10 @@ public sealed class SlideDefaults
     public double Scale { get; set; } = 1;
     /// <summary>Fundo atrás da foto: a própria foto ampliada e desfocada, ou preto.</summary>
     public BackgroundKind Background { get; set; } = BackgroundKind.Blur;
+    /// <summary>Intensidade do desfoque do fundo (1 = padrão; 0,3 suave a 3 muito forte).</summary>
+    public double BackgroundBlur { get; set; } = 1;
+    /// <summary>Quanto o fundo desfocado é escurecido (0 = como a foto; 0,1 padrão; até 0,8).</summary>
+    public double BackgroundDim { get; set; } = 0.1;
 }
 
 /// <summary>Uma foto e, opcionalmente, o que difere do padrão.</summary>
@@ -124,6 +128,8 @@ public sealed class SlideshowConfig
         if (!VideoFormat.IsKnownResolution(Resolution))
             throw new InvalidDataException($"Resolução inválida: {Resolution} (use 720, 1080, 1440 ou 2160).");
         if (Default.Scale is < 0.3 or > 1) throw new InvalidDataException("default.scale deve estar entre 0,3 e 1.");
+        if (Default.BackgroundBlur is < 0.3 or > 3) throw new InvalidDataException("default.background_blur deve estar entre 0,3 e 3.");
+        if (Default.BackgroundDim is < 0 or > 0.8) throw new InvalidDataException("default.background_dim deve estar entre 0 e 0,8.");
         if (SecondsPerPhoto is <= 0) throw new InvalidDataException("seconds_per_photo deve ser maior que zero.");
         if (FadeSeconds is <= 0) throw new InvalidDataException("fade_seconds deve ser maior que zero.");
         if (Bpm <= 0) throw new InvalidDataException("bpm deve ser maior que zero.");

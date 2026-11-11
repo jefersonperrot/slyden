@@ -46,7 +46,7 @@ public class RenderingTests
         slide.Draw(canvas, 0);
 
         AssertColor(SKColors.Blue, frame.GetPixel(W / 2, H / 2));               // a foto, intacta
-        AssertColor(new SKColor(0, 0, 140), frame.GetPixel(5, 5), tolerance: 8); // fundo: azul ~45% mais escuro
+        AssertColor(new SKColor(0, 0, 230), frame.GetPixel(5, 5), tolerance: 8); // fundo: azul ~10% mais escuro
     }
 
     [Fact]

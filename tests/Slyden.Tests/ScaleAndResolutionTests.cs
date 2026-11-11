@@ -49,7 +49,7 @@ public class ScaleAndResolutionTests
     {
         using var frame = Draw(0.5, blur: true);
         var edge = frame.GetPixel(3, 3);
-        Assert.True(edge.Red > 40 && edge.Red < 200, $"vermelho escurecido esperado, veio {edge}");
+        Assert.True(edge.Red > 200 && edge.Red < 250, $"vermelho levemente escurecido esperado, veio {edge}");
         Assert.True(edge.Green < 30 && edge.Blue < 30);
         Assert.Equal(SKColors.Red, frame.GetPixel(W / 2, H / 2));
     }
