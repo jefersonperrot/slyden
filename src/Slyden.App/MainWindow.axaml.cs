@@ -264,7 +264,7 @@ public partial class MainWindow : Window
         AddTextButton.Click += (_, _) => AddText();
         RemoveTextButton.Click += (_, _) => RemoveText();
         TextContent.TextChanged += (_, _) => EditText(t => t.Text = TextContent.Text ?? "");
-        TextFont.TextChanged += (_, _) => EditText(t => t.Font = string.IsNullOrWhiteSpace(TextFont.Text) ? "Arial" : TextFont.Text!.Trim());
+        InitTextTools();
         TextSize.ValueChanged += (_, _) => EditText(t => t.Size = TextSize.Value / 100);
         TextAlign.SelectionChanged += (_, _) => EditText(t => t.Align = (Slyden.Core.Config.TextAlign)Math.Max(0, TextAlign.SelectedIndex));
         TextX.ValueChanged += (_, _) => EditText(t => t.X = TextX.Value / 100);
@@ -1061,7 +1061,7 @@ public partial class MainWindow : Window
         if (text is null || _loading) return;
         _loading = true;
         TextContent.Text = text.Text;
-        TextFont.Text = text.Font;
+        SelectFont(text.Font);
         TextSize.Value = text.Size * 100;
         TextAlign.SelectedIndex = (int)text.Align;
         TextX.Value = text.X * 100;

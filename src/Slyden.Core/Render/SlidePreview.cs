@@ -19,6 +19,26 @@ public static class SlidePreview
     }
 
     /// <summary>
+    /// Onde cada texto do slide cai no quadro, em frações do quadro (0 a 1): esquerda, topo, direita, base.
+    /// A lista tem uma entrada por texto, na ordem; textos vazios vêm com retângulo vazio.
+    /// </summary>
+    public static IReadOnlyList<(double Left, double Top, double Right, double Bottom)> TextBounds(
+        SlideshowConfig config, int index, IReadOnlyList<string>? fontFolders = null)
+    {
+        var (w, h) = VideoFormat.SizeOf(config.Format, config.Resolution);
+        var texts = config.Photos[index].Texts ?? [];
+        var folders = new List<string> { Path.Combine(AppContext.BaseDirectory, "fonts") };
+        folders.AddRange(fontFolders ?? []);
+        using var fonts = new FontResolver(folders);
+        var painter = new TextPainter(fonts);
+        return texts.Select(t =>
+        {
+            var r = painter.Measure(t, w, h);
+            return ((double)r.Left / w, (double)r.Top / h, (double)r.Right / w, (double)r.Bottom / h);
+        }).ToList();
+    }
+
+    /// <summary>
     /// Desenha um quadro do slide <paramref name="index"/> da configuração, com efeito (no ponto <paramref name="t"/>, 0 a 1),
     /// escurecimento e textos. <paramref name="scale"/> reduz o quadro (0,5 = metade do tamanho do vídeo).
     /// </summary>

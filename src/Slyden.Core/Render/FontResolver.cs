@@ -27,6 +27,25 @@ public sealed class FontResolver : IDisposable
         }
     }
 
+    /// <summary>Nomes das famílias de fonte disponíveis: as instaladas no computador e as da pasta "fonts" do programa, em ordem alfabética.</summary>
+    public static IReadOnlyList<string> ListFamilies(IEnumerable<string>? extraFolders = null)
+    {
+        var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var name in SKFontManager.Default.GetFontFamilies())
+            if (!string.IsNullOrWhiteSpace(name) && !name.StartsWith('.') && !name.StartsWith('@')) names.Add(name);
+
+        var folders = new List<string> { Path.Combine(AppContext.BaseDirectory, "fonts") };
+        folders.AddRange(extraFolders ?? []);
+        foreach (var dir in folders.Where(Directory.Exists))
+            foreach (var file in Directory.EnumerateFiles(dir))
+            {
+                if (!Extensions.Contains(Path.GetExtension(file), StringComparer.OrdinalIgnoreCase)) continue;
+                using var face = SKTypeface.FromFile(file);
+                if (face is not null) names.Add(face.FamilyName);
+            }
+        return names.Order(StringComparer.CurrentCultureIgnoreCase).ToList();
+    }
+
     /// <param name="warnings">Recebe uma mensagem se a fonte não existir.</param>
     public SKTypeface Resolve(string family, bool bold, bool italic, ICollection<string>? warnings = null)
     {

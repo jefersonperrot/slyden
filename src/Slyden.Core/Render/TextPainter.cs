@@ -8,15 +8,11 @@ internal sealed class TextPainter(FontResolver fonts)
 {
     private const int FitPasses = 6;
 
-    public void Draw(SKCanvas canvas, TextBlock block, int frameWidth, int frameHeight, double alpha)
+    /// <summary>Quebra as linhas e, se alguma palavra for larga demais, reduz a fonte até caber.</summary>
+    private (string[] Lines, float Size) Fit(TextBlock block, SKTypeface typeface, int frameWidth, int frameHeight)
     {
-        if (alpha <= 0 || string.IsNullOrWhiteSpace(block.Text)) return;
-
-        var typeface = fonts.Resolve(block.Font, block.Bold, block.Italic);
         float maxWidth = (float)(block.MaxWidth * frameWidth);
         float size = (float)(block.Size * Math.Min(frameWidth, frameHeight));
-
-        // quebra as linhas e, se alguma palavra for larga demais, reduz a fonte até caber
         string[] lines = [];
         for (int pass = 0; pass < FitPasses; pass++)
         {
@@ -26,6 +22,32 @@ internal sealed class TextPainter(FontResolver fonts)
             if (widest <= maxWidth * 1.001f) break;
             size *= maxWidth / widest * 0.99f;
         }
+        return (lines, size);
+    }
+
+    /// <summary>Retângulo (em pixels do quadro) que o texto ocupa; vazio se não há texto.</summary>
+    public SKRect Measure(TextBlock block, int frameWidth, int frameHeight)
+    {
+        if (string.IsNullOrWhiteSpace(block.Text)) return SKRect.Empty;
+        var typeface = fonts.Resolve(block.Font, block.Bold, block.Italic);
+        var (lines, size) = Fit(block, typeface, frameWidth, frameHeight);
+        using var font = NewFont(typeface, size);
+        var metrics = font.Metrics;
+        float lineHeight = (metrics.Descent - metrics.Ascent + metrics.Leading) * (float)block.LineSpacing;
+        float height = lines.Length * lineHeight;
+        float width = lines.Max(l => font.MeasureText(l));
+        float anchor = (float)(block.X * frameWidth);
+        float left = anchor - block.Align switch { TextAlign.Left => 0, TextAlign.Center => width / 2, _ => width };
+        float top = (float)(block.Y * frameHeight) - height / 2;
+        return SKRect.Create(left, top, width, height);
+    }
+
+    public void Draw(SKCanvas canvas, TextBlock block, int frameWidth, int frameHeight, double alpha)
+    {
+        if (alpha <= 0 || string.IsNullOrWhiteSpace(block.Text)) return;
+
+        var typeface = fonts.Resolve(block.Font, block.Bold, block.Italic);
+        var (lines, size) = Fit(block, typeface, frameWidth, frameHeight);
 
         using var font = NewFont(typeface, size);
         var metrics = font.Metrics;

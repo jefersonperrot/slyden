@@ -108,7 +108,8 @@ Direção visual: tema escuro no estilo dos aplicativos Adobe. Maquete aprovada 
 - [ ] Controles de desfoque e brilho do fundo no painel; sombra por foto
 - [ ] Renomear projeto; botão para escolher a foto de capa e levá-la ao início
 - [ ] Onda da música com marcas de batida na linha do tempo
-- [ ] Arrastar o texto na prévia; arrastar fotos para reordenar
+- [x] Arrastar o texto na prévia (com ímã no centro), seletor de fonte com as fontes do computador (cada uma mostrada no próprio estilo), botões Centro horizontal / Centro do quadro e clique duplo nos sliders volta ao padrão; 178 testes
+- [ ] Arrastar também o tamanho do texto (alças); cursor de mão ao passar sobre o texto; fontes dos textos de exemplo da capa que existam também no Mac
 - [ ] Incluir fotos de outras pastas (hoje só da pasta do projeto)
 - [ ] Reproduzir a prévia com música; aviso de rosto cortado na foto
 - [ ] Miniaturas mais rápidas (hoje decodifica a foto inteira; usar miniatura embutida/decodificação reduzida)
