@@ -1,4 +1,4 @@
-<Window xmlns="https://github.com/avaloniaui"
+﻿<Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="Slyden.App.MainWindow"
         Title="Slyden" Width="1280" Height="800" MinWidth="980" MinHeight="640" WindowState="Maximized">
@@ -84,7 +84,7 @@
                 <WrapPanel x:Name="EffectChips" />
                 <Grid ColumnDefinitions="*,150">
                   <TextBlock Classes="dim" VerticalAlignment="Center" Text="Intensidade" />
-                  <Slider Grid.Column="1" x:Name="IntensitySlider" Minimum="5" Maximum="30" Value="15" />
+                  <Slider Grid.Column="1" x:Name="IntensitySlider" Minimum="1" Maximum="30" Value="15" />
                 </Grid>
                 <TextBlock Classes="h" Text="TRANSIÇÃO AO ENTRAR" />
                 <WrapPanel x:Name="TransitionChips" />
@@ -166,7 +166,7 @@
                 <WrapPanel x:Name="DefaultEffectChips" />
                 <Grid ColumnDefinitions="*,150">
                   <TextBlock Classes="dim" VerticalAlignment="Center" Text="Intensidade" />
-                  <Slider Grid.Column="1" x:Name="DefaultIntensity" Minimum="5" Maximum="30" Value="15" />
+                  <Slider Grid.Column="1" x:Name="DefaultIntensity" Minimum="1" Maximum="30" Value="15" />
                 </Grid>
                 <TextBlock Classes="h" Text="TRANSIÇÃO" />
                 <WrapPanel x:Name="DefaultTransitionChips" />
@@ -182,6 +182,15 @@
                 <StackPanel Orientation="Horizontal" Spacing="8">
                   <Border x:Name="ColorPreview" Width="24" Height="24" CornerRadius="4" BorderBrush="#55555B" BorderThickness="1" Background="#FFFFFF" />
                   <TextBox x:Name="BackgroundColorBox" Width="110" MaxLength="7" PlaceholderText="#RRGGBB" />
+                  <Button Classes="btn" Content="Mais cores…">
+                    <Button.Flyout>
+                      <Flyout Placement="Left">
+                        <ColorView x:Name="BackgroundColorView" Width="320" IsAlphaVisible="False" IsAlphaEnabled="False"
+                                   IsColorSpectrumVisible="True" IsColorPaletteVisible="True"
+                                   IsColorComponentsVisible="True" IsHexInputVisible="True" />
+                      </Flyout>
+                    </Button.Flyout>
+                  </Button>
                 </StackPanel>
                 <Grid ColumnDefinitions="*,40,120">
                   <TextBlock Classes="dim" VerticalAlignment="Center" Text="Sombra da foto" />
@@ -211,6 +220,12 @@
               <StackPanel x:Name="PaneExport" Spacing="12" IsVisible="False">
                 <TextBlock Classes="h" Text="SAÍDA" />
                 <TextBlock x:Name="ExportSummary" Classes="dim" TextWrapping="Wrap" Text="Formato 16:9 (1920×1080)." />
+                <TextBlock Classes="h" Text="FORMATO DESTE VÍDEO" />
+                <WrapPanel x:Name="ExportFormatChips" />
+                <TextBlock Classes="h" Text="RESOLUÇÃO DESTE VÍDEO" />
+                <WrapPanel x:Name="ExportResolutionChips" />
+                <TextBlock Classes="hint" TextWrapping="Wrap"
+                           Text="Começa igual ao projeto, mas você pode exportar em outro formato ou resolução (ex.: um projeto em 4K também em 1080p) sem alterar o projeto." />
                 <StackPanel Orientation="Horizontal" Spacing="8">
                   <Button x:Name="ExportButton2" Classes="btn primary" Content="Exportar vídeo…" />
                   <Button x:Name="CancelExportButton" Classes="btn" Content="Cancelar exportação" IsVisible="False" />
@@ -339,3 +354,4 @@
     </Border>
   </Grid>
 </Window>
+

@@ -116,7 +116,8 @@ internal sealed class SlideRenderer : IDisposable
         foreach (var text in _texts)
         {
             double alpha = timing is { } tm ? OverlayPlan.AlphaOf(text, tm.Frame, tm.Frames, tm.FadeFrames(text.Block)) : 1;
-            _painter.Draw(canvas, text.Block, _frameWidth, _frameHeight, alpha);
+            lock (_painter) // o desenho de texto compartilha fontes: um quadro por vez
+                _painter.Draw(canvas, text.Block, _frameWidth, _frameHeight, alpha);
         }
     }
 

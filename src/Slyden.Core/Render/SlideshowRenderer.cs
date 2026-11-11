@@ -1,4 +1,4 @@
-using SkiaSharp;
+﻿using SkiaSharp;
 using Slyden.Core.Audio;
 using Slyden.Core.Config;
 
@@ -57,47 +57,109 @@ public static class SlideshowRenderer
         {
             using (var encoder = new FfmpegEncoder(FfmpegLocator.Find(),
                        EncoderArguments(width, height, fps, request.AudioPath, plan.AudioStart, total, partial)))
-            using (var frame = new SKBitmap(new SKImageInfo(width, height, SKColorType.Bgra8888, SKAlphaType.Opaque)))
-            using (var canvas = new SKCanvas(frame))
             {
+                // Vários quadros são desenhados ao mesmo tempo (um por núcleo) e um único fio os entrega ao
+                // ffmpeg na ordem certa. Os quadros em andamento ocupam "espaços" (bitmaps) reutilizados.
+                int workers = Math.Clamp(Environment.ProcessorCount - 1, 1, 8);
+                int slotCount = workers + 2;
+                var frames = new SKBitmap[slotCount];
+                var canvases = new SKCanvas[slotCount];
+                for (int i = 0; i < slotCount; i++)
+                {
+                    frames[i] = new SKBitmap(new SKImageInfo(width, height, SKColorType.Bgra8888, SKAlphaType.Opaque));
+                    canvases[i] = new SKCanvas(frames[i]);
+                }
+                var free = new System.Collections.Concurrent.BlockingCollection<int>();
+                for (int i = 0; i < slotCount; i++) free.Add(i);
+                var pending = new System.Collections.Concurrent.BlockingCollection<(Task<int> Drawn, int Slide)>();
+                var all = new List<Task<int>>();
+                Exception? writerError = null;
+                int written = 0;
+                int totalFrames = edges[^1];
+                using var stop = CancellationTokenSource.CreateLinkedTokenSource(cancellation);
+
+                var writer = Task.Run(() =>
+                {
+                    try
+                    {
+                        foreach (var (drawn, slideIndex) in pending.GetConsumingEnumerable())
+                        {
+                            int slot = drawn.GetAwaiter().GetResult();
+                            encoder.WriteFrame(frames[slot].GetPixelSpan());
+                            int n = Interlocked.Increment(ref written);
+                            free.Add(slot);
+                            if (n % 15 == 0 || n == totalFrames)
+                                progress?.Report(new RenderProgress(slideIndex + 1, slides.Count, (double)n / totalFrames));
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        writerError = ex;
+                        stop.Cancel(); // acorda o laço principal, que espera um espaço livre
+                    }
+                });
+
+                var gate = new object();
                 var loaded = new Dictionary<int, SlideRenderer>();
                 SlideRenderer Get(int i)
                 {
-                    if (!loaded.TryGetValue(i, out var r))
-                        loaded[i] = r = SlideRenderer.Create(
-                            ImageLoader.Load(Path.Combine(request.PhotosFolder, slides[i].File)),
-                            slides[i], width, height, plan.Overlays[i], painter);
-                    return r;
+                    lock (gate)
+                    {
+                        if (!loaded.TryGetValue(i, out var r))
+                            loaded[i] = r = SlideRenderer.Create(
+                                ImageLoader.Load(Path.Combine(request.PhotosFolder, slides[i].File)),
+                                slides[i], width, height, plan.Overlays[i], painter);
+                        return r;
+                    }
                 }
 
                 try
                 {
-                    int done = 0, totalFrames = edges[^1], lastSlide = -1;
+                    int lastSlide = -1;
                     foreach (var f in plan.Frames)
                     {
-                        cancellation.ThrowIfCancellationRequested();
+                        int slot;
+                        try { slot = free.Take(stop.Token); }
+                        catch (OperationCanceledException) when (writerError is not null) { break; }
                         if (f.Slide != lastSlide)
                         {
-                            foreach (var old in loaded.Keys.Where(k => k < f.Slide).ToList())
-                            {
-                                loaded[old].Dispose();
-                                loaded.Remove(old);
-                            }
                             lastSlide = f.Slide;
+                            // libera as fotos que nenhum quadro em andamento ou futuro usa mais, e já carrega a próxima
+                            lock (gate)
+                            {
+                                int done = Volatile.Read(ref written);
+                                foreach (var k in loaded.Keys.Where(k => edges[k + 1] <= done).ToList())
+                                {
+                                    loaded[k].Dispose();
+                                    loaded.Remove(k);
+                                }
+                            }
+                            if (f.Slide + 1 < slides.Count) Get(f.Slide + 1);
                         }
 
-                        plan.Draw(canvas, f, Get);
-
-                        encoder.WriteFrame(frame.GetPixelSpan());
-                        done++;
-                        if (done % 15 == 0 || done == totalFrames)
-                            progress?.Report(new RenderProgress(f.Slide + 1, slides.Count, (double)done / totalFrames));
+                        var frame = f;
+                        var task = Task.Run(() =>
+                        {
+                            plan.Draw(canvases[slot], frame, Get);
+                            return slot;
+                        });
+                        all.Add(task);
+                        pending.Add((task, f.Slide));
                     }
                 }
                 finally
                 {
+                    pending.CompleteAdding();
+                    if (cancellation.IsCancellationRequested || writerError is not null)
+                        encoder.Dispose(); // para o ffmpeg e solta o envio que estiver travado
+                    writer.Wait();
+                    try { Task.WaitAll(all.ToArray()); } catch (AggregateException) { }
                     foreach (var r in loaded.Values) r.Dispose();
+                    foreach (var c in canvases) c.Dispose();
+                    foreach (var b in frames) b.Dispose();
                 }
+                cancellation.ThrowIfCancellationRequested();
+                if (writerError is not null) throw new InvalidOperationException(writerError.Message, writerError);
                 encoder.Finish();
             }
             File.Move(partial, request.OutputPath, overwrite: true);
@@ -131,7 +193,7 @@ public static class SlideshowRenderer
         {
             args.Add("-an");
         }
-        args.AddRange(["-c:v", "libx264", "-crf", "20", "-preset", "medium", "-pix_fmt", "yuv420p", output]);
+        args.AddRange(["-c:v", "libx264", "-crf", "20", "-preset", "veryfast", "-pix_fmt", "yuv420p", output]);
         return args;
     }
 

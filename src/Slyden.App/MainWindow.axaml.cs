@@ -127,6 +127,12 @@ public partial class MainWindow : Window
             swatch.Click += (_, _) => SetBackgroundColor(hex);
             ColorSwatches.Children.Add(swatch);
         }
+        BackgroundColorView.ColorChanged += (_, e) =>
+        {
+            if (_loading) return;
+            var c = e.NewColor;
+            SetBackgroundColor($"#{c.R:X2}{c.G:X2}{c.B:X2}");
+        };
         BackgroundColorBox.TextChanged += (_, _) =>
         {
             var text = BackgroundColorBox.Text?.Trim() ?? "";
@@ -134,6 +140,8 @@ public partial class MainWindow : Window
             ColorPreview.Background = new Avalonia.Media.SolidColorBrush(Avalonia.Media.Color.FromRgb(c.R, c.G, c.B));
             EditDefault(() => _cfg.Default.BackgroundColor = text.ToUpperInvariant());
         };
+        BuildChips(ExportFormatChips, FormatLabels, multi: false, _ => UpdateSummary());
+        BuildChips(ExportResolutionChips, ResolutionLabels, multi: false, _ => UpdateSummary());
         BuildChips(NewFormatChips, FormatLabels, multi: false, _ => UpdateNewSizeInfo());
         BuildChips(NewResolutionChips, ResolutionLabels, multi: false, _ => UpdateNewSizeInfo());
 
@@ -415,12 +423,17 @@ public partial class MainWindow : Window
         SetChips(DefaultBackgroundChips, [(int)_cfg.Default.Background]);
         BackgroundColorBox.Text = _cfg.Default.BackgroundColor;
         if (HexColor.TryParse(_cfg.Default.BackgroundColor, out var bg))
-            ColorPreview.Background = new Avalonia.Media.SolidColorBrush(Avalonia.Media.Color.FromRgb(bg.R, bg.G, bg.B));
+        {
+            var color = Avalonia.Media.Color.FromRgb(bg.R, bg.G, bg.B);
+            ColorPreview.Background = new Avalonia.Media.SolidColorBrush(color);
+            BackgroundColorView.Color = color;
+        }
         BeatsBox.SelectedIndex = _cfg.BeatsPerPhoto switch { 2 => 1, 4 => 2, 8 => 3, _ => 0 };
         SecondsBox.SelectedIndex = _cfg.SecondsPerPhoto switch { 5 => 1, 8 => 2, 10 => 3, _ => 0 };
         Fmt169.IsChecked = _cfg.Format == "16:9";
         Fmt916.IsChecked = _cfg.Format == "9:16";
         Fmt11.IsChecked = _cfg.Format == "1:1";
+        SyncExportChips();
     }
 
     private void Save()
@@ -813,15 +826,31 @@ public partial class MainWindow : Window
     {
         _cfg.Format = format;
         Fmt169.IsChecked = format == "16:9"; Fmt916.IsChecked = format == "9:16"; Fmt11.IsChecked = format == "1:1";
+        SyncExportChips();
         MarkDirty();
         UpdateSummary();
         RefreshPreview();
     }
 
+    /// <summary>Formato e resolução escolhidos para ESTA exportação (começam iguais aos do projeto).</summary>
+    private (string Format, int Resolution) ExportChoice() =>
+        (FormatValues[Checked(ExportFormatChips).FirstOrDefault()],
+         VideoFormat.Resolutions[Checked(ExportResolutionChips).FirstOrDefault(1)]);
+
+    private void SyncExportChips()
+    {
+        bool was = _loading;
+        _loading = true;
+        SetChips(ExportFormatChips, [Math.Max(0, Array.IndexOf(FormatValues, _cfg.Format))]);
+        SetChips(ExportResolutionChips, [Math.Max(0, Array.IndexOf(VideoFormat.Resolutions.ToArray(), _cfg.Resolution))]);
+        _loading = was;
+    }
+
     private void UpdateSummary()
     {
-        var (w, h) = VideoFormat.SizeOf(_cfg.Format, _cfg.Resolution);
-        ExportSummary.Text = $"Formato {_cfg.Format} ({w}×{h}). " +
+        var (format, resolution) = ExportChoice();
+        var (w, h) = VideoFormat.SizeOf(format, resolution);
+        ExportSummary.Text = $"Vai exportar em {format} ({w}×{h}). " +
             (_audio is null ? "Sem música." : $"Música: {Path.GetFileName(_audio)}.");
         RhythmInfo.Text = _audio is null
             ? (_cfg.SecondsPerPhoto is { } s ? $"sem música · {s} s por foto" : $"sem música · {_cfg.Bpm:0} BPM")
@@ -1109,6 +1138,7 @@ public partial class MainWindow : Window
         if (_exporting) return;
         if (_cfg.Photos.Count == 0) { ExportStatus.Text = "O projeto não tem fotos."; return; }
 
+        var exportChoice = ExportChoice();
         IStorageFolder? start = null;
         if (_project?.FilePath is { } projectFile && Path.GetDirectoryName(projectFile) is { } projectDir
             && !string.Equals(projectDir, ProjectStore.DefaultRoot, StringComparison.OrdinalIgnoreCase))
@@ -1117,7 +1147,7 @@ public partial class MainWindow : Window
         {
             Title = "Salvar vídeo",
             SuggestedStartLocation = start,
-            SuggestedFileName = $"{_project?.Name ?? "slyden"}-{_cfg.Format.Replace(':', 'x')}.mp4",
+            SuggestedFileName = $"{_project?.Name ?? "slyden"}-{exportChoice.Format.Replace(':', 'x')}-{exportChoice.Resolution}p.mp4",
             DefaultExtension = "mp4",
             FileTypeChoices = [new FilePickerFileType("Vídeo MP4") { Patterns = ["*.mp4"] }],
         });
@@ -1133,7 +1163,9 @@ public partial class MainWindow : Window
         ExportProgress.Value = 0;
         ExportStatus.Text = "Renderizando…";
 
-        var request = new RenderRequest(_folder, output, _cfg.Clone(), _audio);
+        var exportConfig = _cfg.Clone();
+        (exportConfig.Format, exportConfig.Resolution) = exportChoice;
+        var request = new RenderRequest(_folder, output, exportConfig, _audio);
         var watch = Stopwatch.StartNew();
         var progress = new Progress<RenderProgress>(p =>
         {

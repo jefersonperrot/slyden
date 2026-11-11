@@ -121,7 +121,7 @@ public class GeometryTests
         Assert.Equal(0, SlideGeometry.Ease(0));
         Assert.Equal(1, SlideGeometry.Ease(1));
         Assert.Equal(.5, SlideGeometry.Ease(.5), 9);
-        Assert.True(SlideGeometry.Ease(.1) < .1); // começa devagar
+        Assert.InRange(SlideGeometry.Ease(.1), .07, .1); // quase linear: já anda de saída, sem arrancar de repente
     }
 
     [Theory]

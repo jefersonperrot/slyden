@@ -41,7 +41,8 @@ public static class SlideGeometry
     }
 
     /// <summary>Suave no início e no fim.</summary>
-    public static double Ease(double t) => t * t * (3 - 2 * t);
+    /// <summary>Quase linear: o movimento começa já no primeiro quadro (a curva suave pura parecia foto parada no início).</summary>
+    public static double Ease(double t) => 0.75 * t + 0.25 * (t * t * (3 - 2 * t));
 
     public static double Lerp(double a, double b, double t) => a + (b - a) * t;
 }

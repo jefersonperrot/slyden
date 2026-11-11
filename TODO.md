@@ -91,7 +91,12 @@ Direção visual: tema escuro no estilo dos aplicativos Adobe. Maquete aprovada 
 - [x] "Pasta do projeto" no Novo projeto: o `.slyden` é gravado na pasta escolhida (registrada em `projects.json` para aparecer na lista) e o vídeo exportado sugere essa pasta; 168 testes
 - [x] Fundo de cor lisa (opção "Cor" + amostras e campo #RRGGBB na aba Padrão; por foto escolhe "Cor" e usa a cor padrão); 170 testes
 - [x] Exportação mostra porcentagem, tempo restante estimado e tempo total ao terminar
-- [ ] Cor de fundo diferente por foto; seletor de cor completo
+- [x] Exportar escolhe formato e resolução na hora (começa igual ao projeto; não altera o projeto)
+- [x] Render ~3x mais rápido: quadros desenhados em paralelo (um por núcleo) e entregues em ordem ao ffmpeg, preset x264 `veryfast` (30 fotos/15 s: 1080p 33 s → 12 s; 4K 126 s → 43 s; saída idêntica quadro a quadro)
+- [x] Efeito começa já no primeiro quadro (curva quase linear) e intensidade mínima de 1% (antes 5%)
+- [x] Seletor de cor completo ("Mais cores…": espectro, paleta, sliders e hexadecimal)
+- [ ] Render: 4K ainda ~10 quadros/s (sombra custa ~40%); avaliar sombra pré-calculada, reduzir fotos grandes antes do desenho, codificador de hardware
+- [ ] Cor de fundo diferente por foto
 - [ ] Abrir projeto `.slyden` de qualquer lugar (Arquivo > Abrir); mover/alterar a pasta de um projeto existente
 - [ ] Controles de desfoque e brilho do fundo no painel; sombra por foto
 - [ ] Renomear projeto; botão para escolher a foto de capa e levá-la ao início
