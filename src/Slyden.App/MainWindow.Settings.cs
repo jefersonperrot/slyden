@@ -69,7 +69,6 @@ public partial class MainWindow
         StTextFadeIn.ValueChanged += (_, _) => EditTextStyle(t => t.FadeIn = Num(StTextFadeIn));
         StTextFadeOut.ValueChanged += (_, _) => EditTextStyle(t => t.FadeOut = Num(StTextFadeOut));
 
-        SettingsButton.Click += (_, _) => { if (SettingsView.IsVisible) CloseSettings(); else ShowSettings(); };
         SettingsCloseButton.Click += (_, _) => CloseSettings();
         CopyFromProjectButton.Click += (_, _) =>
         {

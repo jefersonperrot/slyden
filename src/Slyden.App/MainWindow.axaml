@@ -11,17 +11,39 @@
         <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
           <Border Width="8" Height="8" CornerRadius="2" Background="#3B8BFF" />
           <TextBlock Text="SLYDEN" FontWeight="Medium" LetterSpacing="2" FontSize="12" />
-          <Button x:Name="ProjectsButton" Classes="btn" Padding="10,3" Content="Projetos" />
+          <Menu x:Name="MainMenu" VerticalAlignment="Center">
+            <MenuItem Header="_Arquivo" x:Name="MenuFile">
+              <MenuItem x:Name="MenuNew" Header="_Novo projeto…" />
+              <MenuItem x:Name="MenuProjects" Header="_Projetos" />
+              <Separator />
+              <MenuItem x:Name="MenuSave" Header="_Salvar" InputGesture="Ctrl+S" />
+              <MenuItem x:Name="MenuExport" Header="_Exportar vídeo…" />
+              <Separator />
+              <MenuItem x:Name="MenuExit" Header="S_air" />
+            </MenuItem>
+            <MenuItem Header="_Editar" x:Name="MenuEdit">
+              <MenuItem x:Name="MenuUndo" Header="_Desfazer" InputGesture="Ctrl+Z" />
+              <MenuItem x:Name="MenuRedo" Header="_Refazer" InputGesture="Ctrl+Y" />
+            </MenuItem>
+            <MenuItem Header="_Projeto" x:Name="MenuProject">
+              <MenuItem x:Name="MenuMusic" Header="Escolher _música…" />
+              <MenuItem x:Name="MenuRemoveMusic" Header="_Remover música" />
+              <Separator />
+              <MenuItem x:Name="MenuSettings" Header="_Configurações e presets…" />
+            </MenuItem>
+            <MenuItem Header="A_juda" x:Name="MenuHelp">
+              <MenuItem x:Name="MenuShortcuts" Header="_Atalhos de teclado" />
+              <MenuItem x:Name="MenuAbout" Header="_Sobre o Slyden" />
+            </MenuItem>
+          </Menu>
         </StackPanel>
         <TextBlock Grid.Column="1" x:Name="ProjectName" Classes="dim" HorizontalAlignment="Center"
                    VerticalAlignment="Center" Text="Nenhum projeto aberto" />
         <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
           <TextBlock x:Name="SaveState" Classes="hint" VerticalAlignment="Center" />
-          <Button x:Name="SettingsButton" Classes="btn" Content="⚙" FontSize="15" ToolTip.Tip="Configurações do programa" />
           <Button x:Name="UndoButton" Classes="btn" Content="↶ Desfazer" IsEnabled="False" ToolTip.Tip="Desfazer (Ctrl+Z)" />
           <Button x:Name="RedoButton" Classes="btn" Content="↷ Refazer" IsEnabled="False" ToolTip.Tip="Refazer (Ctrl+Y)" />
           <Button x:Name="SaveButton" Classes="btn" Content="Salvar" />
-          <Button x:Name="MusicButton" Classes="btn" Content="Música…" />
           <Button x:Name="RemoveMusicButton" Classes="btn" Content="Remover música" IsVisible="False" />
           <Button x:Name="ExportButton" Classes="btn primary" Content="Exportar" />
         </StackPanel>

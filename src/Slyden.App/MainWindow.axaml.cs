@@ -146,7 +146,7 @@ public partial class MainWindow : Window
         BuildChips(NewResolutionChips, ResolutionLabels, multi: false, _ => UpdateNewSizeInfo());
 
         PlayButton.Click += async (_, _) => await TogglePlayAsync();
-        ProjectsButton.Click += (_, _) => ShowHome();
+        InitMenu();
         NewProjectButton.Click += (_, _) => ShowNewProject();
         NewFolderButton.Click += async (_, _) => await ChooseNewFolderAsync();
         NewProjectFolderButton.Click += async (_, _) => await ChooseProjectFolderAsync();
@@ -158,7 +158,6 @@ public partial class MainWindow : Window
         SelectAllButton.Click += (_, _) => ToggleSelectAll();
         ProjectList.DoubleTapped += (_, _) => { if (ProjectList.SelectedItem is ProjectItem p) OpenProject(p.Entry.Project); };
         SaveButton.Click += (_, _) => Save();
-        MusicButton.Click += async (_, _) => await ChooseMusicAsync();
         RemoveMusicButton.Click += (_, _) => RemoveMusic();
         UndoButton.Click += (_, _) => Undo();
         RedoButton.Click += (_, _) => Redo();
