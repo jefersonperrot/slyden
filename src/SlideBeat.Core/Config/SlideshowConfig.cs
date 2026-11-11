@@ -34,6 +34,12 @@ public sealed class PhotoSpec
     public double[]? Zoom { get; set; }
     /// <summary>Avançado: centro inicial e final, cada um [x, y] de 0 a 1.</summary>
     public double[][]? Center { get; set; }
+    /// <summary>Duração em "ciclos" normais de slide (2 = o dobro do tempo; útil para a capa). Padrão 1.</summary>
+    public int? Length { get; set; }
+    /// <summary>Escurece a foto (0 a 1) para o texto ler melhor.</summary>
+    public double? Dim { get; set; }
+    /// <summary>Textos sobre este slide.</summary>
+    public List<TextBlock>? Texts { get; set; }
 }
 
 public sealed class SlideshowConfig
@@ -107,6 +113,9 @@ public sealed class SlideshowConfig
             if (p.Zoom is { } z && z.Any(v => v < 1)) throw new InvalidDataException($"{p.File}: zoom não pode ser menor que 1.");
             if (p.Center is { } c && (c.Length != 2 || c.Any(pt => pt.Length != 2)))
                 throw new InvalidDataException($"{p.File}: center deve ser [[x,y],[x,y]].");
+            if (p.Length is < 1 or > 16) throw new InvalidDataException($"{p.File}: length deve estar entre 1 e 16.");
+            if (p.Dim is < 0 or > 1) throw new InvalidDataException($"{p.File}: dim deve estar entre 0 e 1.");
+            for (int i = 0; i < (p.Texts?.Count ?? 0); i++) p.Texts![i].Validate($"{p.File}, texto {i + 1}");
         }
     }
 

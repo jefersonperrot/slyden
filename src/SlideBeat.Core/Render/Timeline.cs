@@ -5,7 +5,9 @@ namespace SlideBeat.Core.Render;
 /// <param name="Slide">Índice do slide atual.</param>
 /// <param name="T">Progresso do movimento do slide, de 0 a 1.</param>
 /// <param name="FadeAlpha">Quanto do próximo slide já aparece por cima (0 = nada, 1 = ele inteiro).</param>
-public readonly record struct FrameInfo(int Slide, double T, double FadeAlpha);
+/// <param name="Frame">Número do quadro dentro do slide (0 = o primeiro).</param>
+/// <param name="Frames">Quantos quadros o slide tem.</param>
+public readonly record struct FrameInfo(int Slide, double T, double FadeAlpha, int Frame, int Frames);
 
 public static class Timeline
 {
@@ -25,7 +27,7 @@ public static class Timeline
                 double t = (double)k / Math.Max(frames - 1, 1);
                 int left = frames - k;
                 double alpha = fadeOut && left <= fadeFrames ? 1 - (double)(left - 1) / fadeFrames : 0;
-                yield return new FrameInfo(i, t, alpha);
+                yield return new FrameInfo(i, t, alpha, k, frames);
             }
         }
     }

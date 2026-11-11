@@ -33,6 +33,19 @@ Sem `--audio` o vídeo sai mudo e usa o `bpm` da configuração. Se o `--config`
 (efeitos, intensidade, transição e exceção por foto) para você editar. O formato do arquivo é o mesmo de
 `prototype-python/exemplo-config.json`.
 
+### Capa e textos
+Cada foto aceita `length` (ciclos de batida, para a capa durar mais), `dim` (0–1, escurece a foto) e `texts`:
+```json
+{ "file": "capa.jpg", "length": 2, "dim": 0.4,
+  "texts": [
+    { "text": "Wedding day", "font": "Segoe Script", "size": 0.085, "align": "left", "x": 0.08, "y": 0.30 },
+    { "text": "Maria e João", "font": "Georgia", "bold": true, "size": 0.12, "align": "center", "color": "#FFF1CC", "span": 2 },
+    { "text": "11/11/2026", "font": "Century Gothic", "size": 0.04, "align": "right", "x": 0.92, "y": 0.90 }
+  ] }
+```
+`size` é relativo ao menor lado do quadro; `x`/`y` são frações do quadro; `span` faz o texto continuar nos slides seguintes.
+Fontes: instaladas no Windows, na pasta `fonts` ao lado do programa ou em `--fonts pasta`. Fonte inexistente gera um aviso.
+
 ## Rodar o protótipo Python (referência)
 ```
 pip install -r prototype-python/requirements.txt

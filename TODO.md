@@ -27,6 +27,10 @@ Atualizar este arquivo a cada etapa concluída ou nova ideia.
 - [x] 67 testes automatizados (config, geometria, linha do tempo, desenho em pixels, EXIF, batida)
 - [x] Corrigido "tranco" nos movimentos laterais/verticais: a foto ficava parada e arrancava de repente porque o movimento pedia mais do que o zoom permitia (a borda cortava). Agora o movimento usa exatamente a margem livre da foto. O protótipo Python ainda tem esse defeito (não será corrigido; serve só de referência)
 
+- [x] Capa e textos sobre os slides (motor): blocos de texto por foto com fonte, tamanho, cor, negrito/itálico, alinhamento, posição, sombra, contorno, quebra automática e redução para caber; fade de entrada/saída na batida; `span` para o texto continuar em vários slides; `length` para um slide durar vários ciclos (capa mais longa); `dim` para escurecer a foto sob o texto
+- [x] Fontes: pasta `fonts` ao lado do programa, `--fonts pasta` ou fontes instaladas; aviso quando a fonte não existe (usa a padrão)
+- [x] 115 testes automatizados; capa conferida visualmente em 16:9 e 9:16
+
 ## Fazendo
 - [ ] (nada em andamento)
 
@@ -48,14 +52,10 @@ Atualizar este arquivo a cada etapa concluída ou nova ideia.
 - [ ] Vídeo com várias fotos por tela (colagem) — avaliar
 
 ## A fazer — capa e textos sobre os slides
-- [ ] Textos sobre um ou mais slides (ex.: "Wedding day" / "Maria e João" / "11/11/2026"), cada bloco com fonte, tamanho, cor, alinhamento e posição próprios
-- [ ] Capa: slide inicial com foto (ou fundo liso/desfocado) + textos; duração própria em batidas
-- [ ] Tamanhos e posições relativos ao quadro (mesmo visual em 16:9 e 9:16), com ajuste por formato
-- [ ] Legibilidade: sombra, contorno e/ou faixa escura atrás do texto
-- [ ] Animação do texto: aparecer/sumir com fade, entrando na batida
-- [ ] Quebra de linha automática e redução do tamanho quando o texto não cabe
-- [ ] Fontes: incluir no instalador fontes com licença livre (OFL) + permitir fontes instaladas no Windows; conferir a licença de cada uma
-- [ ] Testes: posição/alinhamento em pixels, acentos (João, Estação), texto longo
+- [ ] Capa sem foto (fundo liso ou desfocado) + textos
+- [ ] Ajuste de texto por formato (posição/tamanho diferentes em 16:9 e 9:16); hoje os valores são relativos ao quadro
+- [ ] Faixa escura atrás do texto (hoje há sombra, contorno e `dim`)
+- [ ] Fontes: incluir no instalador fontes com licença livre (OFL); conferir a licença de cada uma
 - [ ] Prévia do texto na interface (arrastar para posicionar)
 
 ## A fazer — interface (Avalonia)

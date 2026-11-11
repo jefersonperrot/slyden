@@ -7,7 +7,7 @@ using SlideBeat.Core.Render;
 const string Usage = """
     Uso:
       slidebeat beats  <audio> [--photos N] [--per auto|2|4|8] [--json saida.json]
-      slidebeat render <pasta_fotos> <saida.mp4> [--audio musica.mp3] [--config config.json] [--format 16:9|9:16]
+      slidebeat render <pasta_fotos> <saida.mp4> [--audio musica.mp3] [--config config.json] [--format 16:9|9:16] [--fonts pasta]
 
     Sem --audio, o vídeo sai mudo e usa o "bpm" da configuração.
     Se o --config indicado não existir, é criado com os padrões para você editar.
@@ -75,11 +75,13 @@ static int Render(string[] args)
     if (args.Length < 3) { Console.Error.WriteLine(Usage); return 1; }
     string folder = args[1], output = args[2];
     string? audio = null, configPath = null, format = null;
+    var fontFolders = new List<string>();
     for (int i = 3; i < args.Length; i++)
     {
         switch (args[i])
         {
             case "--audio": audio = args[++i]; break;
+            case "--fonts": fontFolders.Add(args[++i]); break;
             case "--config": configPath = args[++i]; break;
             case "--format": format = args[++i]; break;
             default: Console.Error.WriteLine($"Opção desconhecida: {args[i]}"); return 1;
@@ -116,8 +118,10 @@ static int Render(string[] args)
     using var cts = new CancellationTokenSource();
     Console.CancelKeyPress += (_, e) => { e.Cancel = true; cts.Cancel(); };
 
-    var summary = SlideshowRenderer.Render(new RenderRequest(folder, output, config, audio), progress, cts.Token);
+    var summary = SlideshowRenderer.Render(
+        new RenderRequest(folder, output, config, audio, FontFolders: fontFolders), progress, cts.Token);
     Console.WriteLine(string.Create(CultureInfo.InvariantCulture,
         $"\rok: {output} | {summary.DurationSeconds:F0}s | {summary.Slides} fotos | tempo ~{summary.Tempo:F0} BPM | troca a cada {summary.BeatsPerPhoto} batidas   "));
+    foreach (var warning in summary.Warnings) Console.WriteLine($"aviso: {warning}");
     return 0;
 }

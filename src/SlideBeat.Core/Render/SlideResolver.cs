@@ -8,7 +8,8 @@ public readonly record struct Motion(double Zoom0, double Zoom1, double Cx0, dou
 /// <summary>Foto com padrão e exceções já aplicados. O <see cref="Motion"/> depende do tamanho da foto: ver <see cref="SlideResolver.MotionOf"/>.</summary>
 public sealed record ResolvedSlide(
     string File, EffectKind Effect, double Intensity, TransitionKind Transition,
-    double[]? Zoom = null, double[][]? Center = null);
+    double[]? Zoom = null, double[][]? Center = null,
+    int Length = 1, double Dim = 0, IReadOnlyList<TextBlock>? Texts = null);
 
 public static class SlideResolver
 {
@@ -23,7 +24,8 @@ public static class SlideResolver
             var p = cfg.Photos[i];
             var auto = d.Order == EffectOrder.Cycle ? d.Effects[i % d.Effects.Count] : d.Effects[rng.Next(d.Effects.Count)];
             result.Add(new ResolvedSlide(p.File, p.Effect ?? auto, p.Intensity ?? d.Intensity,
-                                         p.Transition ?? d.Transition, p.Zoom, p.Center));
+                                         p.Transition ?? d.Transition, p.Zoom, p.Center,
+                                         p.Length ?? 1, p.Dim ?? 0, p.Texts ?? []));
         }
         return result;
     }

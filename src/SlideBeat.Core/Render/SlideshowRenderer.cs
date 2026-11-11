@@ -6,12 +6,16 @@ namespace SlideBeat.Core.Render;
 
 /// <param name="PhotosFolder">Pasta onde estão os arquivos citados em <see cref="SlideshowConfig.Photos"/>.</param>
 /// <param name="AudioPath">Música; sem ela, usa o <see cref="SlideshowConfig.Bpm"/> e o vídeo sai mudo.</param>
+/// <param name="FontFolders">Pastas com fontes (.ttf/.otf) além das instaladas no sistema; a pasta "fonts" ao lado do programa é sempre usada.</param>
 public sealed record RenderRequest(
-    string PhotosFolder, string OutputPath, SlideshowConfig Config, string? AudioPath = null, int Fps = 30);
+    string PhotosFolder, string OutputPath, SlideshowConfig Config, string? AudioPath = null, int Fps = 30,
+    IReadOnlyList<string>? FontFolders = null);
 
 public sealed record RenderProgress(int Slide, int Slides, double Fraction);
 
-public sealed record RenderSummary(double DurationSeconds, int Slides, double Tempo, int BeatsPerPhoto);
+/// <param name="Warnings">Coisas que não impedem o vídeo mas o usuário deve saber (ex.: fonte não encontrada).</param>
+public sealed record RenderSummary(
+    double DurationSeconds, int Slides, double Tempo, int BeatsPerPhoto, IReadOnlyList<string> Warnings);
 
 public static class SlideshowRenderer
 {
@@ -31,15 +35,24 @@ public static class SlideshowRenderer
             if (!File.Exists(Path.Combine(request.PhotosFolder, s.File)))
                 throw new FileNotFoundException($"Foto não encontrada: {s.File}", Path.Combine(request.PhotosFolder, s.File));
 
-        // quando cada slide começa (segundos), na batida
+        // fontes: confere já, antes do trabalho pesado, e junta os avisos
+        var fontFolders = new List<string> { Path.Combine(AppContext.BaseDirectory, "fonts") };
+        fontFolders.AddRange(request.FontFolders ?? []);
+        using var fonts = new FontResolver(fontFolders);
+        var warnings = new List<string>();
+        foreach (var block in slides.SelectMany(s => s.Texts ?? []))
+            fonts.Resolve(block.Font, block.Bold, block.Italic, warnings);
+        warnings = warnings.Distinct().ToList();
+
+        // quando cada slide começa (segundos), sempre numa batida; "length" faz um slide durar vários ciclos
+        int units = slides.Sum(s => s.Length);
         double[] cuts;
-        double beat;
-        double tempo;
+        double beat, tempo;
         int perPhoto;
         if (request.AudioPath is { } audio)
         {
             var analysis = BeatAnalyzer.Analyze(AudioDecoder.DecodeMono(audio));
-            var plan = CutPlanner.Plan(analysis, slides.Count, cfg.BeatsPerPhoto);
+            var plan = CutPlanner.Plan(analysis, units, cfg.BeatsPerPhoto);
             cuts = plan.CutTimes;
             perPhoto = plan.BeatsPerPhoto;
             tempo = analysis.Tempo;
@@ -50,24 +63,27 @@ public static class SlideshowRenderer
             perPhoto = cfg.BeatsPerPhoto ?? 4;
             tempo = cfg.Bpm;
             beat = 60.0 / cfg.Bpm;
-            cuts = Enumerable.Range(0, slides.Count + 1).Select(i => i * perPhoto * beat).ToArray();
+            cuts = Enumerable.Range(0, units + 1).Select(i => i * perPhoto * beat).ToArray();
         }
 
-        int count = Math.Min(slides.Count, cuts.Length - 1);
+        var boundaries = Boundaries(cuts, slides.Select(s => s.Length).ToList());
+        int count = boundaries.Count - 1;
         if (count < 1) throw new InvalidOperationException("A música é curta demais ou não tem batidas detectáveis.");
         slides = slides.Take(count).ToList();
+        var overlays = OverlayPlan.Build(slides);
 
-        var edges = cuts.Take(count + 1).Select(c => (int)Math.Round((c - cuts[0]) * fps)).ToArray();
+        var edges = boundaries.Select(c => (int)Math.Round((c - boundaries[0]) * fps)).ToArray();
         double total = (double)edges[^1] / fps;
         int fadeFrames = (int)Math.Round(cfg.Default.FadeBeats * beat * fps);
         var transitions = slides.Select(s => s.Transition).ToList();
+        var painter = new TextPainter(fonts);
 
         string partial = Path.Combine(Path.GetDirectoryName(Path.GetFullPath(request.OutputPath))!,
                                       Path.GetFileNameWithoutExtension(request.OutputPath) + ".partial.mp4");
         try
         {
             using (var encoder = new FfmpegEncoder(FfmpegLocator.Find(),
-                       EncoderArguments(width, height, fps, request.AudioPath, cuts[0], total, partial)))
+                       EncoderArguments(width, height, fps, request.AudioPath, boundaries[0], total, partial)))
             using (var frame = new SKBitmap(new SKImageInfo(width, height, SKColorType.Bgra8888, SKAlphaType.Opaque)))
             using (var canvas = new SKCanvas(frame))
             {
@@ -77,7 +93,7 @@ public static class SlideshowRenderer
                     if (!loaded.TryGetValue(i, out var r))
                         loaded[i] = r = SlideRenderer.Create(
                             ImageLoader.Load(Path.Combine(request.PhotosFolder, slides[i].File)),
-                            slides[i], width, height);
+                            slides[i], width, height, overlays[i], painter);
                     return r;
                 }
 
@@ -98,12 +114,13 @@ public static class SlideshowRenderer
                         }
 
                         canvas.Clear(SKColors.Black);
-                        Get(f.Slide).Draw(canvas, f.T);
+                        Get(f.Slide).Draw(canvas, f.T, new TextTiming(f.Frame, f.Frames, beat, fps));
                         if (f.FadeAlpha > 0)
                         {
+                            int next = f.Slide + 1;
                             using var layer = new SKPaint { Color = new SKColor(255, 255, 255, (byte)Math.Round(f.FadeAlpha * 255)) };
                             canvas.SaveLayer(layer);
-                            Get(f.Slide + 1).Draw(canvas, 0);
+                            Get(next).Draw(canvas, 0, new TextTiming(0, edges[next + 1] - edges[next], beat, fps));
                             canvas.Restore();
                         }
 
@@ -125,7 +142,25 @@ public static class SlideshowRenderer
         {
             if (File.Exists(partial)) File.Delete(partial); // cancelamento ou erro: não deixa vídeo pela metade
         }
-        return new RenderSummary(total, count, tempo, perPhoto);
+        return new RenderSummary(total, count, tempo, perPhoto, warnings);
+    }
+
+    /// <summary>
+    /// Instantes em que cada slide começa (e o fim do último). Um slide com length 2 ocupa dois intervalos da grade de batidas.
+    /// Para no primeiro slide que não couber na música.
+    /// </summary>
+    internal static IReadOnlyList<double> Boundaries(IReadOnlyList<double> cuts, IReadOnlyList<int> lengths)
+    {
+        if (cuts.Count == 0) return [];
+        var result = new List<double> { cuts[0] };
+        int used = 0;
+        foreach (int length in lengths)
+        {
+            used += length;
+            if (used >= cuts.Count) break;
+            result.Add(cuts[used]);
+        }
+        return result;
     }
 
     private static List<string> EncoderArguments(int width, int height, int fps, string? audio, double audioStart,

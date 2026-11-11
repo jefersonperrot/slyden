@@ -14,19 +14,30 @@ internal sealed class SlideRenderer : IDisposable
     private readonly SKImage? _backgroundImage;
     private readonly SlideLayout _layout;
     private readonly Motion _motion;
+    private readonly int _frameWidth, _frameHeight;
+    private readonly double _dim;
+    private readonly IReadOnlyList<ActiveText> _texts;
+    private readonly TextPainter? _painter;
 
     /// <summary>Cria o desenhista do slide calculando o movimento para o tamanho real da foto.</summary>
-    public static SlideRenderer Create(SKBitmap source, ResolvedSlide slide, int frameWidth, int frameHeight)
+    public static SlideRenderer Create(SKBitmap source, ResolvedSlide slide, int frameWidth, int frameHeight,
+                                       IReadOnlyList<ActiveText>? texts = null, TextPainter? painter = null)
     {
         var layout = SlideGeometry.Layout(source.Width, source.Height, frameWidth, frameHeight);
         var motion = SlideResolver.MotionOf(slide, source.Width, source.Height, (double)layout.Width / layout.Height);
-        return new SlideRenderer(source, motion, frameWidth, frameHeight);
+        return new SlideRenderer(source, motion, frameWidth, frameHeight, slide.Dim, texts, painter);
     }
 
-    public SlideRenderer(SKBitmap source, Motion motion, int frameWidth, int frameHeight)
+    public SlideRenderer(SKBitmap source, Motion motion, int frameWidth, int frameHeight,
+                         double dim = 0, IReadOnlyList<ActiveText>? texts = null, TextPainter? painter = null)
     {
         _source = source;
         _motion = motion;
+        _frameWidth = frameWidth;
+        _frameHeight = frameHeight;
+        _dim = dim;
+        _texts = texts ?? [];
+        _painter = painter;
         _image = SKImage.FromBitmap(source);
         _layout = SlideGeometry.Layout(source.Width, source.Height, frameWidth, frameHeight);
         if (!_layout.Fill)
@@ -37,7 +48,8 @@ internal sealed class SlideRenderer : IDisposable
     }
 
     /// <param name="t">Progresso do movimento, de 0 a 1.</param>
-    public void Draw(SKCanvas canvas, double t)
+    /// <param name="timing">Onde estamos no slide, para o fade dos textos; sem ele os textos aparecem inteiros.</param>
+    public void Draw(SKCanvas canvas, double t, TextTiming? timing = null)
     {
         double e = SlideGeometry.Ease(t);
         var view = SlideGeometry.View(
@@ -51,6 +63,19 @@ internal sealed class SlideRenderer : IDisposable
         var src = new SKRect((float)view.X0, (float)view.Y0, (float)view.X1, (float)view.Y1);
         var dst = SKRect.Create(_layout.OffsetX, _layout.OffsetY, _layout.Width, _layout.Height);
         canvas.DrawImage(_image, src, dst, Cubic);
+
+        if (_dim > 0)
+        {
+            using var dark = new SKPaint { Color = new SKColor(0, 0, 0, (byte)Math.Round(_dim * 255)) };
+            canvas.DrawRect(SKRect.Create(_frameWidth, _frameHeight), dark);
+        }
+
+        if (_painter is null) return;
+        foreach (var text in _texts)
+        {
+            double alpha = timing is { } tm ? OverlayPlan.AlphaOf(text, tm.Frame, tm.Frames, tm.FadeFrames(text.Block)) : 1;
+            _painter.Draw(canvas, text.Block, _frameWidth, _frameHeight, alpha);
+        }
     }
 
     /// <summary>Fundo para fotos que não preenchem o quadro: a própria foto, ampliada, desfocada e escurecida.</summary>
