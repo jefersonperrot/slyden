@@ -17,7 +17,19 @@ com Pillow e codifica com ffmpeg. Serve de especificação para o app definitivo
 
 A decisão é fazer o produto **todo em C# (.NET + Avalonia)**, sem Python embutido. Ver `TODO.md`.
 
-## Rodar o protótipo
+## Motor em C# (em andamento)
+```
+src/SlideBeat.Core    motor: áudio, detecção de batida, plano de trocas
+src/SlideBeat.Cli     linha de comando para testar o motor
+tests/SlideBeat.Tests testes xUnit
+```
+Precisa do .NET 9 SDK e de um `ffmpeg` (ao lado do programa, no PATH, ou na variável `SLIDEBEAT_FFMPEG`).
+```
+dotnet test
+dotnet run --project src/SlideBeat.Cli -- beats musica.mp3 --photos 30 --json batidas.json
+```
+
+## Rodar o protótipo Python (referência)
 ```
 pip install -r prototype-python/requirements.txt
 python prototype-python/music.py <pasta_fotos> <musica.mp3> <saida.mp4> <config.json>

@@ -14,14 +14,19 @@ Atualizar este arquivo a cada etapa concluída ou nova ideia.
 - [x] Repositório Git criado
 - [x] Decisão: Python não será distribuído com o produto (fica só como referência/teste de comparação da detecção de batida)
 
+- [x] Solução .NET 9 criada: `SlideBeat.Core` (motor), `SlideBeat.Cli`, `SlideBeat.Tests` (xUnit)
+- [x] Áudio via ffmpeg para PCM mono (`AudioDecoder`, `FfmpegLocator`)
+- [x] Detecção de batida em C# (FFT própria, mel, força de onset, tempo, programação dinâmica) — sem dependências externas
+- [x] Início do compasso (fase mais forte) e troca a cada 2/4/8 batidas ("auto") em `CutPlanner`
+- [x] Comparado com o protótipo na mesma música: tempo idêntico (136 BPM) e as 30 trocas coincidem (0 ms); o C# só começa uma troca antes
+- [x] 11 testes automatizados passando; detecção de 244 s de áudio em ~2 s
+
 ## Fazendo
 - [ ] (nada em andamento)
 
 ## A fazer — motor (C#)
-- [ ] Criar solução .NET (biblioteca do motor + app Avalonia)
-- [ ] Decodificar áudio via ffmpeg para PCM
-- [ ] Detecção de batida em C# (força de onset + tempo + programação dinâmica) e comparar com o protótipo
-- [ ] Escolha do início do compasso (fase mais forte) e troca a cada 2/4/8 batidas ("auto")
+- [ ] Testar a detecção com mais músicas (ritmo lento, andamento variável, sem bateria) e comparar com o protótipo
+- [ ] Ajustar o corte de batidas fracas nas pontas (o C# manteve 5 batidas a mais que o protótipo)
 - [ ] Render dos quadros com SkiaSharp e envio ao ffmpeg
 - [ ] Efeitos, transições e configuração (padrão + por foto) iguais ao protótipo
 - [ ] Formatos 16:9 e 9:16
