@@ -54,8 +54,9 @@ public sealed class ProjectItem(ProjectEntry entry) : Notifying
     public ProjectEntry Entry { get; } = entry;
     public string Name => Entry.Project.Name;
     public string Details =>
-        $"{Entry.Project.Config.Photos.Count} fotos · {Entry.Project.Config.Format} {Entry.Project.Config.Resolution}p · " +
-        $"{(Entry.Project.PhotosFolder.Length > 0 ? Entry.Project.PhotosFolder : "sem pasta")} · editado em {Entry.Project.Modified.ToLocalTime():dd/MM/yyyy HH:mm}";
+        $"{Entry.Project.Config.Photos.Count} fotos · {Entry.Project.Config.Format} · {Entry.Project.Config.Resolution}p · " +
+        $"editado em {Entry.Project.Modified.ToLocalTime():dd/MM/yyyy HH:mm}";
+    public string Folder => Entry.Project.PhotosFolder.Length > 0 ? Entry.Project.PhotosFolder : "Sem pasta de fotos";
     public bool Confirming { get => _confirming; set { _confirming = value; Changed(nameof(DeleteLabel)); } }
     public string DeleteLabel => _confirming ? "Confirmar exclusão" : "Excluir";
 }
