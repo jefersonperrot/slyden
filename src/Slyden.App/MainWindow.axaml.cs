@@ -120,6 +120,7 @@ public partial class MainWindow : Window
         ProjectsButton.Click += (_, _) => ShowHome();
         NewProjectButton.Click += (_, _) => ShowNewProject();
         NewFolderButton.Click += async (_, _) => await ChooseNewFolderAsync();
+        NewProjectFolderButton.Click += async (_, _) => await ChooseProjectFolderAsync();
         NewCreateButton.Click += (_, _) => CreateProject();
         NewCancelButton.Click += (_, _) => { NewProjectView.IsVisible = false; HomeView.IsVisible = true; };
         DragDrop.SetAllowDrop(this, true);
@@ -242,9 +243,21 @@ public partial class MainWindow : Window
     }
 
     private string _newFolder = "";
+    private string _newProjectFolder = "";
+
+    private async Task ChooseProjectFolderAsync()
+    {
+        var picked = await StorageProvider.OpenFolderPickerAsync(
+            new FolderPickerOpenOptions { Title = "Pasta onde gravar o projeto", AllowMultiple = false });
+        if (picked.Count == 0 || picked[0].TryGetLocalPath() is not { } path) return;
+        _newProjectFolder = path;
+        NewProjectFolderText.Text = path;
+    }
 
     private void ShowNewProject()
     {
+        _newProjectFolder = "";
+        NewProjectFolderText.Text = "Pasta padrão do programa";
         HomeMessage.Text = "";
         NewMessage.Text = "";
         NewName.Text = "";
@@ -295,7 +308,20 @@ public partial class MainWindow : Window
         config.Resolution = VideoFormat.Resolutions[Checked(NewResolutionChips).FirstOrDefault(1)];
 
         var project = new ProjectFile { Name = name, PhotosFolder = _newFolder, Config = config };
-        _store.Save(project);
+        try
+        {
+            if (_newProjectFolder.Length > 0)
+            {
+                Directory.CreateDirectory(_newProjectFolder);
+                project.FilePath = ProjectStore.NewPathIn(_newProjectFolder, name);
+            }
+            _store.Save(project);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            NewMessage.Text = "Não consegui gravar o projeto nessa pasta: " + ex.Message;
+            return;
+        }
         NewProjectView.IsVisible = false;
         OpenProject(project);
     }
@@ -310,12 +336,12 @@ public partial class MainWindow : Window
                 OpenProject(item.Entry.Project);
                 break;
             case "duplicate":
-                _store.Duplicate(item.Entry.Project.Id);
+                _store.DuplicateFile(item.Entry.Path);
                 RefreshProjectList();
                 break;
             case "delete":
                 if (!item.Confirming) { item.Confirming = true; break; }
-                _store.Delete(item.Entry.Project.Id);
+                _store.DeleteFile(item.Entry.Path);
                 RefreshProjectList();
                 break;
         }
@@ -1042,9 +1068,14 @@ public partial class MainWindow : Window
         if (_exporting) return;
         if (_cfg.Photos.Count == 0) { ExportStatus.Text = "O projeto não tem fotos."; return; }
 
+        IStorageFolder? start = null;
+        if (_project?.FilePath is { } projectFile && Path.GetDirectoryName(projectFile) is { } projectDir
+            && !string.Equals(projectDir, ProjectStore.DefaultRoot, StringComparison.OrdinalIgnoreCase))
+            start = await StorageProvider.TryGetFolderFromPathAsync(projectDir);
         var file = await StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
         {
             Title = "Salvar vídeo",
+            SuggestedStartLocation = start,
             SuggestedFileName = $"{_project?.Name ?? "slyden"}-{_cfg.Format.Replace(':', 'x')}.mp4",
             DefaultExtension = "mp4",
             FileTypeChoices = [new FilePickerFileType("Vídeo MP4") { Patterns = ["*.mp4"] }],

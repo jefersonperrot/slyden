@@ -274,6 +274,13 @@
         <TextBlock Classes="h" Text="RESOLUÇÃO" />
         <WrapPanel x:Name="NewResolutionChips" />
         <TextBlock x:Name="NewSizeInfo" Classes="hint" />
+        <TextBlock Classes="h" Text="PASTA DO PROJETO" />
+        <StackPanel Orientation="Horizontal" Spacing="10">
+          <Button x:Name="NewProjectFolderButton" Classes="btn" Content="Escolher pasta do projeto…" />
+          <TextBlock x:Name="NewProjectFolderText" Classes="dim" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="320" />
+        </StackPanel>
+        <TextBlock Classes="hint" TextWrapping="Wrap"
+                   Text="O arquivo do projeto (.slyden) é gravado aqui, e o vídeo exportado sugere esta pasta. Sem escolher, fica na pasta do programa." />
         <TextBlock Classes="h" Text="FOTOS" />
         <StackPanel Orientation="Horizontal" Spacing="10">
           <Button x:Name="NewFolderButton" Classes="btn" Content="Escolher pasta de fotos…" />

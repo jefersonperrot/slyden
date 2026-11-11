@@ -23,6 +23,50 @@ public class ProjectStoreTests : IDisposable
     };
 
     [Fact]
+    public void Project_saved_in_a_chosen_folder_is_written_there_and_listed()
+    {
+        string folder = Path.Combine(_root, "meu casamento");
+        var project = Sample("Casamento: Ana/Beto");
+        project.FilePath = ProjectStore.NewPathIn(folder, project.Name);
+
+        string path = Store.Save(project);
+
+        Assert.StartsWith(folder, path);
+        Assert.True(File.Exists(path));
+        Assert.Equal(project.Id, Assert.Single(Store.List()).Project.Id);
+        Assert.Equal(path, Store.List()[0].Path);
+    }
+
+    [Fact]
+    public void Chosen_folder_projects_can_be_duplicated_and_deleted_without_touching_other_files()
+    {
+        string folder = Path.Combine(_root, "externa");
+        Directory.CreateDirectory(folder);
+        File.WriteAllText(Path.Combine(folder, "foto.jpg"), "x");
+        var project = Sample("Evento");
+        project.FilePath = ProjectStore.NewPathIn(folder, project.Name);
+        string path = Store.Save(project);
+
+        var copy = Store.DuplicateFile(path);
+        Assert.Equal(folder, Path.GetDirectoryName(copy.FilePath));
+        Assert.Equal(2, Store.List().Count);
+
+        Store.DeleteFile(path);
+        Assert.Equal(copy.Id, Assert.Single(Store.List()).Project.Id);
+        Assert.True(File.Exists(Path.Combine(folder, "foto.jpg")));
+    }
+
+    [Fact]
+    public void Missing_external_projects_disappear_from_the_list()
+    {
+        var project = Sample("Some");
+        project.FilePath = ProjectStore.NewPathIn(Path.Combine(_root, "x"), "Some");
+        string path = Store.Save(project);
+        File.Delete(path);
+        Assert.Empty(Store.List());
+    }
+
+    [Fact]
     public void Save_and_load_round_trip()
     {
         var project = Sample("Casamento");
