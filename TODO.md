@@ -47,6 +47,17 @@ Atualizar este arquivo a cada etapa concluída ou nova ideia.
 - [ ] Opção de duração por foto manual (fora da batida)
 - [ ] Vídeo com várias fotos por tela (colagem) — avaliar
 
+## A fazer — capa e textos sobre os slides
+- [ ] Textos sobre um ou mais slides (ex.: "Wedding day" / "Maria e João" / "11/11/2026"), cada bloco com fonte, tamanho, cor, alinhamento e posição próprios
+- [ ] Capa: slide inicial com foto (ou fundo liso/desfocado) + textos; duração própria em batidas
+- [ ] Tamanhos e posições relativos ao quadro (mesmo visual em 16:9 e 9:16), com ajuste por formato
+- [ ] Legibilidade: sombra, contorno e/ou faixa escura atrás do texto
+- [ ] Animação do texto: aparecer/sumir com fade, entrando na batida
+- [ ] Quebra de linha automática e redução do tamanho quando o texto não cabe
+- [ ] Fontes: incluir no instalador fontes com licença livre (OFL) + permitir fontes instaladas no Windows; conferir a licença de cada uma
+- [ ] Testes: posição/alinhamento em pixels, acentos (João, Estação), texto longo
+- [ ] Prévia do texto na interface (arrastar para posicionar)
+
 ## A fazer — interface (Avalonia)
 - [ ] Escolher pasta de fotos e música
 - [ ] Tela de padrões (efeitos, intensidade, transição, ritmo)
