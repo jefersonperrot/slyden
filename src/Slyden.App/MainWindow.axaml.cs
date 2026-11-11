@@ -116,6 +116,7 @@ public partial class MainWindow : Window
         BuildChips(NewFormatChips, FormatLabels, multi: false, _ => UpdateNewSizeInfo());
         BuildChips(NewResolutionChips, ResolutionLabels, multi: false, _ => UpdateNewSizeInfo());
 
+        PlayButton.Click += async (_, _) => await TogglePlayAsync();
         ProjectsButton.Click += (_, _) => ShowHome();
         NewProjectButton.Click += (_, _) => ShowNewProject();
         NewFolderButton.Click += async (_, _) => await ChooseNewFolderAsync();
@@ -151,6 +152,7 @@ public partial class MainWindow : Window
         SlideList.SelectionChanged += (_, _) =>
         {
             if (_suspendSelection) return;
+            if (_playing) StopPlayback(refresh: false); // o usuário clicou numa foto: para a prévia
             _selected = SlideList.SelectedIndex;
             UpdateSelectionButtons();
             LoadSlideControls();
@@ -204,6 +206,7 @@ public partial class MainWindow : Window
 
     protected override void OnClosing(WindowClosingEventArgs e)
     {
+        StopPlayback(refresh: false);
         if (_project is not null && _dirty) Save();
         base.OnClosing(e);
     }
@@ -212,6 +215,7 @@ public partial class MainWindow : Window
 
     private void ShowHome()
     {
+        StopPlayback(refresh: false);
         if (_project is not null && _dirty) Save();
         RefreshProjectList();
         HomeView.IsVisible = true;
@@ -312,6 +316,7 @@ public partial class MainWindow : Window
             return;
         }
 
+        StopPlayback(refresh: false);
         _project = project;
         _cfg = project.Config;
         _folder = project.PhotosFolder;
@@ -374,6 +379,7 @@ public partial class MainWindow : Window
     private void MarkDirty()
     {
         if (_project is null) return;
+        StopPlayback(refresh: false); // a prévia tocada mostraria a versão antiga
         _dirty = true;
         UpdateSaveState();
     }
@@ -923,7 +929,7 @@ public partial class MainWindow : Window
 
     private async void RefreshPreview()
     {
-        if (_cfg.Photos.Count == 0 || _selected < 0) return;
+        if (_cfg.Photos.Count == 0 || _selected < 0 || _playing || _preparing) return;
         int generation = ++_generation;
         await Task.Delay(40); // junta várias mudanças seguidas (arrastar um controle, digitar)
         if (generation != _generation) return;
@@ -1005,6 +1011,7 @@ public partial class MainWindow : Window
     private async Task ExportOrCancelAsync()
     {
         if (_exporting) { CancelExport(); return; }
+        StopPlayback(refresh: false);
         await ExportAsync();
     }
 

@@ -77,6 +77,11 @@ Direção visual: tema escuro no estilo dos aplicativos Adobe. Maquete aprovada 
 - [x] Segunda revisão do usuário (11/11/2026): tela Novo projeto (nome, formato, resolução 720p/1080p/1440p/4K, pasta opcional), seleção múltipla (Ctrl/Shift/clique alterna) + Selecionar todas + remover várias, arrastar e soltar fotos/pastas do Explorador, fotos de qualquer pasta (caminho completo quando fora da pasta do projeto), tamanho da foto 30–100% (padrão + por foto) com fundo desfocado ou preto; 148 testes
 - [ ] Conferir a tela visualmente depois dessas mudanças
 - [x] Reordenar: arrastar fotos (uma ou várias selecionadas) na linha do tempo com marcador azul e rolagem automática nas bordas; ◀ ▶ movem várias de uma vez; `ListReorder` testado (156 testes)
+- [x] Prévia animada no app (botão Reproduzir): toca a partir da foto selecionada com efeitos, transições, textos e música (NAudio, só Windows); relógio = música; `SlideshowPlan` é compartilhado com a exportação (mesmo roteiro e mesmo desenho); ~18 ms por quadro a 720 px; 163 testes
+- [ ] **Testar a prévia animada** (tocar, parar, trocar de foto durante a reprodução, música longa) e conferir a sincronia com o som
+- [ ] Prévia: pausar/retomar, barra para pular para um ponto, tecla Espaço, volume
+- [ ] Prévia: quadros ocasionais perdidos nas trocas com fade (p95 ~37 ms); usar miniaturas reduzidas das fotos para acelerar
+- [ ] Música em outros sistemas (hoje o som da prévia usa NAudio, só Windows)
 - [ ] Aplicar ajustes do painel (efeito, tamanho etc.) a todas as fotos selecionadas
 - [ ] Números de posição nos cartões da linha do tempo; atalhos "Para o início/fim"
 - [ ] Resolução do vídeo no app depois de criado (hoje só na criação do projeto)

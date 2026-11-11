@@ -52,10 +52,13 @@
         </Border>
 
         <Border Grid.Row="2" BorderBrush="#333338" BorderThickness="0,1,0,0" Padding="12,8">
-          <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
-            <TextBlock Classes="dim" VerticalAlignment="Center" Text="Movimento" />
-            <Slider Grid.Column="1" x:Name="MotionSlider" Minimum="0" Maximum="1" Value="0.5" />
-            <TextBlock Grid.Column="2" x:Name="RhythmInfo" Classes="hint" VerticalAlignment="Center" Text="" />
+          <Grid ColumnDefinitions="Auto,Auto,Auto,*,Auto" ColumnSpacing="12">
+            <Button x:Name="PlayButton" Classes="btn" Content="▶  Reproduzir" MinWidth="120"
+                    ToolTip.Tip="Toca o slideshow a partir da foto selecionada, com a música" />
+            <TextBlock Grid.Column="1" x:Name="PlayTime" Classes="dim" VerticalAlignment="Center" MinWidth="90" Text="" />
+            <TextBlock Grid.Column="2" Classes="dim" VerticalAlignment="Center" Text="Movimento" />
+            <Slider Grid.Column="3" x:Name="MotionSlider" Minimum="0" Maximum="1" Value="0.5" />
+            <TextBlock Grid.Column="4" x:Name="RhythmInfo" Classes="hint" VerticalAlignment="Center" Text="" />
           </Grid>
         </Border>
       </Grid>
