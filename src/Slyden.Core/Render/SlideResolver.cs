@@ -9,7 +9,8 @@ public readonly record struct Motion(double Zoom0, double Zoom1, double Cx0, dou
 public sealed record ResolvedSlide(
     string File, EffectKind Effect, double Intensity, TransitionKind Transition,
     double[]? Zoom = null, double[][]? Center = null,
-    int Length = 1, double Dim = 0, IReadOnlyList<TextBlock>? Texts = null);
+    int Length = 1, double Dim = 0, IReadOnlyList<TextBlock>? Texts = null,
+    double Scale = 1, BackgroundKind Background = BackgroundKind.Blur);
 
 public static class SlideResolver
 {
@@ -25,7 +26,8 @@ public static class SlideResolver
             var auto = d.Order == EffectOrder.Cycle ? d.Effects[i % d.Effects.Count] : d.Effects[rng.Next(d.Effects.Count)];
             result.Add(new ResolvedSlide(p.File, p.Effect ?? auto, p.Intensity ?? d.Intensity,
                                          p.Transition ?? d.Transition, p.Zoom, p.Center,
-                                         p.Length ?? 1, p.Dim ?? 0, p.Texts ?? []));
+                                         p.Length ?? 1, p.Dim ?? 0, p.Texts ?? [],
+                                         p.Scale ?? d.Scale, p.Background ?? d.Background));
         }
         return result;
     }

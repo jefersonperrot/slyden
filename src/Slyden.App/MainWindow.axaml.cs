@@ -54,7 +54,8 @@ public sealed class ProjectItem(ProjectEntry entry) : Notifying
     public ProjectEntry Entry { get; } = entry;
     public string Name => Entry.Project.Name;
     public string Details =>
-        $"{Entry.Project.Config.Photos.Count} fotos · {Entry.Project.PhotosFolder} · editado em {Entry.Project.Modified.ToLocalTime():dd/MM/yyyy HH:mm}";
+        $"{Entry.Project.Config.Photos.Count} fotos · {Entry.Project.Config.Format} {Entry.Project.Config.Resolution}p · " +
+        $"{(Entry.Project.PhotosFolder.Length > 0 ? Entry.Project.PhotosFolder : "sem pasta")} · editado em {Entry.Project.Modified.ToLocalTime():dd/MM/yyyy HH:mm}";
     public bool Confirming { get => _confirming; set { _confirming = value; Changed(nameof(DeleteLabel)); } }
     public string DeleteLabel => _confirming ? "Confirmar exclusão" : "Excluir";
 }
@@ -69,6 +70,10 @@ public partial class MainWindow : Window
         EffectKind.None => "Nenhum", EffectKind.ZoomIn => "Zoom in", EffectKind.ZoomOut => "Zoom out",
         EffectKind.PanLr => "Pan ←→", EffectKind.PanRl => "Pan →←", EffectKind.TiltUp => "Subir", _ => "Descer",
     };
+
+    private static readonly string[] FormatLabels = ["16:9 (YouTube)", "9:16 (Reels, Stories)", "1:1 (feed)"];
+    private static readonly string[] FormatValues = ["16:9", "9:16", "1:1"];
+    private static readonly string[] ResolutionLabels = ["720p HD", "1080p Full HD", "1440p 2K", "2160p 4K"];
 
     private const int PreviewMaxSide = 1920;
     private const int PreviewCacheSize = 6;
@@ -102,9 +107,20 @@ public partial class MainWindow : Window
         BuildChips(TransitionChips, ["Padrão", "Corte", "Fade"], multi: false, OnSlideTransition);
         BuildChips(DefaultEffectChips, Effects.Select(EffectName).ToArray(), multi: true, OnDefaultEffects);
         BuildChips(DefaultTransitionChips, ["Corte", "Fade"], multi: false, OnDefaultTransition);
+        BuildChips(BackgroundChips, ["Padrão", "Desfocado", "Preto"], multi: false, OnSlideBackground);
+        BuildChips(DefaultBackgroundChips, ["Desfocado", "Preto"], multi: false, OnDefaultBackground);
+        BuildChips(NewFormatChips, FormatLabels, multi: false, _ => UpdateNewSizeInfo());
+        BuildChips(NewResolutionChips, ResolutionLabels, multi: false, _ => UpdateNewSizeInfo());
 
         ProjectsButton.Click += (_, _) => ShowHome();
-        NewProjectButton.Click += async (_, _) => await NewProjectAsync();
+        NewProjectButton.Click += (_, _) => ShowNewProject();
+        NewFolderButton.Click += async (_, _) => await ChooseNewFolderAsync();
+        NewCreateButton.Click += (_, _) => CreateProject();
+        NewCancelButton.Click += (_, _) => { NewProjectView.IsVisible = false; HomeView.IsVisible = true; };
+        DragDrop.SetAllowDrop(this, true);
+        AddHandler(DragDrop.DragOverEvent, OnDragOver);
+        AddHandler(DragDrop.DropEvent, OnDrop);
+        SelectAllButton.Click += (_, _) => ToggleSelectAll();
         ProjectList.DoubleTapped += (_, _) => { if (ProjectList.SelectedItem is ProjectItem p) OpenProject(p.Entry.Project); };
         SaveButton.Click += (_, _) => Save();
         MusicButton.Click += async (_, _) => await ChooseMusicAsync();
@@ -125,7 +141,23 @@ public partial class MainWindow : Window
         TabDefault.Click += (_, _) => ShowTab(2);
         TabExport.Click += (_, _) => ShowTab(3);
 
-        SlideList.SelectionChanged += (_, _) => { _selected = SlideList.SelectedIndex; LoadSlideControls(); RefreshPreview(); };
+        SlideList.SelectionChanged += (_, _) =>
+        {
+            _selected = SlideList.SelectedIndex;
+            UpdateSelectionButtons();
+            LoadSlideControls();
+            RefreshPreview();
+        };
+        ScaleSlider.ValueChanged += (_, _) =>
+        {
+            ScaleValue.Text = $"{ScaleSlider.Value:0}%";
+            EditSlide(s => s.Scale = ScaleSlider.Value / 100);
+        };
+        DefaultScale.ValueChanged += (_, _) =>
+        {
+            DefaultScaleValue.Text = $"{DefaultScale.Value:0}%";
+            EditDefault(() => _cfg.Default.Scale = DefaultScale.Value / 100);
+        };
         SlideList.KeyDown += (_, e) =>
         {
             if (e.Key == Key.Delete) { RemovePhoto(); e.Handled = true; }
@@ -184,23 +216,62 @@ public partial class MainWindow : Window
         NoProjects.IsVisible = list.Count == 0;
     }
 
-    private async Task NewProjectAsync()
+    private string _newFolder = "";
+
+    private void ShowNewProject()
     {
         HomeMessage.Text = "";
+        NewMessage.Text = "";
+        NewName.Text = "";
+        _newFolder = "";
+        NewFolderText.Text = "Nenhuma pasta escolhida";
+        bool was = _loading;
+        _loading = true;
+        SetChips(NewFormatChips, [0]);
+        SetChips(NewResolutionChips, [1]);
+        _loading = was;
+        UpdateNewSizeInfo();
+        HomeView.IsVisible = false;
+        NewProjectView.IsVisible = true;
+        NewName.Focus();
+    }
+
+    private void UpdateNewSizeInfo()
+    {
+        var format = FormatValues[Checked(NewFormatChips).FirstOrDefault()];
+        int resolution = VideoFormat.Resolutions[Checked(NewResolutionChips).FirstOrDefault(1)];
+        var (w, h) = VideoFormat.SizeOf(format, resolution);
+        NewSizeInfo.Text = $"O vídeo terá {w}×{h} pixels.";
+    }
+
+    private async Task ChooseNewFolderAsync()
+    {
         var picked = await StorageProvider.OpenFolderPickerAsync(
-            new FolderPickerOpenOptions { Title = "Pasta com as fotos do novo projeto", AllowMultiple = false });
+            new FolderPickerOpenOptions { Title = "Pasta com as fotos do projeto", AllowMultiple = false });
         if (picked.Count == 0 || picked[0].TryGetLocalPath() is not { } path) return;
+        _newFolder = path;
+        NewFolderText.Text = path;
+        if (string.IsNullOrWhiteSpace(NewName.Text) && Path.GetFileName(path.TrimEnd('\\', '/')) is { Length: > 0 } name)
+            NewName.Text = name;
+    }
 
-        var config = SlideshowConfig.CreateFor(path);
-        if (config.Photos.Count == 0) { HomeMessage.Text = "Essa pasta não tem fotos .jpg."; return; }
+    private void CreateProject()
+    {
+        string name = NewName.Text?.Trim() ?? "";
+        if (name.Length == 0) { NewMessage.Text = "Dê um nome ao projeto."; return; }
 
-        var project = new ProjectFile
+        var config = _newFolder.Length > 0 ? SlideshowConfig.CreateFor(_newFolder) : new SlideshowConfig();
+        if (_newFolder.Length > 0 && config.Photos.Count == 0)
         {
-            Name = Path.GetFileName(path.TrimEnd('\\', '/')) is { Length: > 0 } n ? n : "Novo projeto",
-            PhotosFolder = path,
-            Config = config,
-        };
+            NewMessage.Text = "Essa pasta não tem fotos .jpg. Escolha outra ou crie o projeto sem pasta.";
+            return;
+        }
+        config.Format = FormatValues[Checked(NewFormatChips).FirstOrDefault()];
+        config.Resolution = VideoFormat.Resolutions[Checked(NewResolutionChips).FirstOrDefault(1)];
+
+        var project = new ProjectFile { Name = name, PhotosFolder = _newFolder, Config = config };
         _store.Save(project);
+        NewProjectView.IsVisible = false;
         OpenProject(project);
     }
 
@@ -227,7 +298,7 @@ public partial class MainWindow : Window
 
     private void OpenProject(ProjectFile project)
     {
-        if (!Directory.Exists(project.PhotosFolder))
+        if (project.PhotosFolder.Length > 0 && !Directory.Exists(project.PhotosFolder))
         {
             HomeMessage.Text = $"A pasta de fotos não foi encontrada: {project.PhotosFolder}";
             return;
@@ -264,6 +335,9 @@ public partial class MainWindow : Window
         SetChips(DefaultEffectChips, _cfg.Default.Effects.Select(e => Array.IndexOf(Effects, e)).Where(i => i >= 0).ToArray());
         SetChips(DefaultTransitionChips, [(int)_cfg.Default.Transition]);
         DefaultIntensity.Value = _cfg.Default.Intensity * 100;
+        DefaultScale.Value = _cfg.Default.Scale * 100;
+        DefaultScaleValue.Text = $"{DefaultScale.Value:0}%";
+        SetChips(DefaultBackgroundChips, [(int)_cfg.Default.Background]);
         BeatsBox.SelectedIndex = _cfg.BeatsPerPhoto switch { 2 => 1, 4 => 2, 8 => 3, _ => 0 };
         SecondsBox.SelectedIndex = _cfg.SecondsPerPhoto switch { 5 => 1, 8 => 2, 10 => 3, _ => 0 };
         Fmt169.IsChecked = _cfg.Format == "16:9";
@@ -362,29 +436,58 @@ public partial class MainWindow : Window
         }
     }
 
+    private List<int> SelectedIndices() =>
+        SlideList.SelectedItems?.OfType<SlideItem>().Select(i => _items.IndexOf(i)).Where(i => i >= 0).Order().ToList() ?? [];
+
+    private void UpdateSelectionButtons()
+    {
+        int count = SelectedIndices().Count;
+        RemovePhotoButton.Content = count > 1 ? $"Remover {count} fotos" : "Remover foto";
+        SelectAllButton.Content = _items.Count > 0 && count == _items.Count ? "Desmarcar todas" : "Selecionar todas";
+    }
+
+    private void ToggleSelectAll()
+    {
+        if (_items.Count == 0) return;
+        if (SelectedIndices().Count == _items.Count) SlideList.SelectedItems?.Clear();
+        else SlideList.SelectAll();
+    }
+
     private void RemovePhoto()
     {
-        if (_selected < 0 || _selected >= _cfg.Photos.Count) return;
-        int at = _selected;
-        _cfg.Photos.RemoveAt(at);
-        _items.RemoveAt(at);
+        var indices = SelectedIndices();
+        if (indices.Count == 0) return;
+        int first = indices[0];
+        foreach (int at in Enumerable.Reverse(indices))
+        {
+            _cfg.Photos.RemoveAt(at);
+            _items.RemoveAt(at);
+        }
         MarkDirty();
         TimelineInfo.Text = $"{_items.Count} fotos";
-        int next = Math.Min(at, _items.Count - 1);
+        int next = Math.Min(first, _items.Count - 1);
         SlideList.SelectedIndex = next;
         _selected = next;
+        UpdateSelectionButtons();
         LoadSlideControls();
         if (next < 0)
         {
             PreviewImage.Source = null;
             EmptyHint.IsVisible = true;
-            SlideInfo.Text = "Projeto sem fotos. Use + Fotos para incluir de novo.";
+            SlideInfo.Text = "Projeto sem fotos. Use + Fotos ou arraste fotos para cá.";
         }
-        else RefreshPreview();
+        else
+        {
+            RefreshPreview();
+            SlideInfo.Text = indices.Count > 1
+                ? $"{indices.Count} fotos removidas do projeto (os arquivos continuam no computador)."
+                : SlideInfo.Text;
+        }
     }
 
     private void MovePhoto(int direction)
     {
+        if (SelectedIndices().Count != 1) { SlideInfo.Text = "Selecione uma única foto para mover."; return; }
         int from = _selected, to = _selected + direction;
         if (from < 0 || to < 0 || to >= _cfg.Photos.Count) return;
         var spec = _cfg.Photos[from];
@@ -401,26 +504,39 @@ public partial class MainWindow : Window
     private async Task AddPhotosAsync()
     {
         if (_project is null) return;
-        var start = await StorageProvider.TryGetFolderFromPathAsync(_folder);
+        IStorageFolder? start = _folder.Length > 0 ? await StorageProvider.TryGetFolderFromPathAsync(_folder) : null;
         var picked = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
         {
-            Title = "Incluir fotos da pasta do projeto",
+            Title = "Incluir fotos no projeto",
             AllowMultiple = true,
             SuggestedStartLocation = start,
             FileTypeFilter = [new FilePickerFileType("Fotos JPG") { Patterns = ["*.jpg", "*.jpeg"] }],
         });
-        if (picked.Count == 0) return;
+        AddPhotoPaths(picked.Select(f => f.TryGetLocalPath()).OfType<string>());
+    }
 
-        string root = Path.GetFullPath(_folder).TrimEnd('\\', '/');
+    private static bool IsPhoto(string path) =>
+        path.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) || path.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>Nome gravado no projeto: relativo à pasta do projeto quando a foto está dentro dela, senão o caminho completo.</summary>
+    private string ProjectPathOf(string full)
+    {
+        if (_folder.Length == 0) return full;
+        string root = Path.GetFullPath(_folder).TrimEnd('\\', '/') + Path.DirectorySeparatorChar;
+        return Path.GetFullPath(full).StartsWith(root, StringComparison.OrdinalIgnoreCase)
+            ? Path.GetRelativePath(_folder, full)
+            : full;
+    }
+
+    private void AddPhotoPaths(IEnumerable<string> paths)
+    {
+        if (_project is null) return;
         var added = new List<SlideItem>();
-        int skipped = 0;
-        foreach (var file in picked)
+        int duplicates = 0;
+        foreach (var full in paths.Where(IsPhoto).Order(StringComparer.OrdinalIgnoreCase))
         {
-            if (file.TryGetLocalPath() is not { } full) continue;
-            string dir = Path.GetDirectoryName(Path.GetFullPath(full))!.TrimEnd('\\', '/');
-            string name = Path.GetFileName(full);
-            if (!string.Equals(dir, root, StringComparison.OrdinalIgnoreCase)) { skipped++; continue; }
-            if (_cfg.Photos.Any(p => string.Equals(p.File, name, StringComparison.OrdinalIgnoreCase))) continue;
+            string name = ProjectPathOf(full);
+            if (_cfg.Photos.Any(p => string.Equals(p.File, name, StringComparison.OrdinalIgnoreCase))) { duplicates++; continue; }
             var spec = new PhotoSpec { File = name };
             _cfg.Photos.Add(spec);
             var item = new SlideItem(spec);
@@ -435,9 +551,34 @@ public partial class MainWindow : Window
             SlideList.SelectedItem = added[0];
             _ = LoadThumbnailsAsync(added, _folder);
         }
-        SlideInfo.Text = skipped > 0
-            ? $"{skipped} foto(s) ignorada(s): só dá para incluir fotos da pasta do projeto ({_folder})."
-            : added.Count > 0 ? $"{added.Count} foto(s) incluída(s)." : "Essas fotos já estão no projeto.";
+        SlideInfo.Text = added.Count > 0
+            ? $"{added.Count} foto(s) incluída(s)." + (duplicates > 0 ? $" {duplicates} já estava(m) no projeto." : "")
+            : duplicates > 0 ? "Essas fotos já estão no projeto." : "Nenhuma foto .jpg encontrada.";
+    }
+
+    // ---------- arrastar e soltar ----------
+
+    private bool CanDrop => _project is not null && !HomeView.IsVisible && !NewProjectView.IsVisible;
+
+    private void OnDragOver(object? sender, DragEventArgs e)
+    {
+        e.DragEffects = CanDrop && e.DataTransfer.Contains(DataFormat.File) ? DragDropEffects.Copy : DragDropEffects.None;
+        e.Handled = true;
+    }
+
+    private void OnDrop(object? sender, DragEventArgs e)
+    {
+        if (!CanDrop) return;
+        var paths = new List<string>();
+        foreach (var item in e.DataTransfer.TryGetFiles() ?? [])
+        {
+            if (item.TryGetLocalPath() is not { } local) continue;
+            if (Directory.Exists(local))
+                paths.AddRange(Directory.EnumerateFiles(local).Where(IsPhoto));
+            else paths.Add(local);
+        }
+        AddPhotoPaths(paths);
+        e.Handled = true;
     }
 
     // ---------- música, formato, resumo ----------
@@ -468,7 +609,7 @@ public partial class MainWindow : Window
 
     private void UpdateSummary()
     {
-        var (w, h) = VideoFormat.SizeOf(_cfg.Format);
+        var (w, h) = VideoFormat.SizeOf(_cfg.Format, _cfg.Resolution);
         ExportSummary.Text = $"Formato {_cfg.Format} ({w}×{h}). " +
             (_audio is null ? "Sem música." : $"Música: {Path.GetFileName(_audio)}.");
         RhythmInfo.Text = _audio is null
@@ -495,9 +636,12 @@ public partial class MainWindow : Window
         IntensitySlider.Value = (spec.Intensity ?? _cfg.Default.Intensity) * 100;
         LengthBox.SelectedIndex = Math.Clamp((spec.Length ?? 1) - 1, 0, 3);
         DimSlider.Value = (spec.Dim ?? 0) * 100;
+        ScaleSlider.Value = (spec.Scale ?? _cfg.Default.Scale) * 100;
+        ScaleValue.Text = $"{ScaleSlider.Value:0}%";
+        SetChips(BackgroundChips, [spec.Background is { } bg ? 1 + (int)bg : 0]);
         _loading = false;
         ReloadTexts(select: 0);
-        SlideInfo.Text = $"Foto {_selected + 1} de {_cfg.Photos.Count} · {spec.File}";
+        SlideInfo.Text = $"Foto {_selected + 1} de {_cfg.Photos.Count} · {Path.GetFileName(spec.File)}";
     }
 
     private void EditSlide(Action<PhotoSpec> edit)
@@ -515,10 +659,17 @@ public partial class MainWindow : Window
     private void OnSlideTransition(int[] on) =>
         EditSlide(s => s.Transition = on[0] == 0 ? null : (TransitionKind)(on[0] - 1));
 
+    private void OnSlideBackground(int[] on) =>
+        EditSlide(s => s.Background = on[0] == 0 ? null : (BackgroundKind)(on[0] - 1));
+
+    private void OnDefaultBackground(int[] on) =>
+        EditDefault(() => _cfg.Default.Background = (BackgroundKind)on[0]);
+
     private void ResetSlide()
     {
         if (Current is not { } spec) return;
         spec.Effect = null; spec.Intensity = null; spec.Transition = null; spec.Length = null; spec.Dim = null;
+        spec.Scale = null; spec.Background = null;
         _items[_selected].RefreshTags();
         MarkDirty();
         LoadSlideControls();

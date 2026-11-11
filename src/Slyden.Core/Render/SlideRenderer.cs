@@ -16,6 +16,8 @@ internal sealed class SlideRenderer : IDisposable
     private readonly Motion _motion;
     private readonly int _frameWidth, _frameHeight;
     private readonly double _dim;
+    private readonly double _scale;
+    private readonly bool _needsBackground;
     private readonly IReadOnlyList<ActiveText> _texts;
     private readonly TextPainter? _painter;
 
@@ -25,11 +27,15 @@ internal sealed class SlideRenderer : IDisposable
     {
         var layout = SlideGeometry.Layout(source.Width, source.Height, frameWidth, frameHeight);
         var motion = SlideResolver.MotionOf(slide, source.Width, source.Height, (double)layout.Width / layout.Height);
-        return new SlideRenderer(source, motion, frameWidth, frameHeight, slide.Dim, texts, painter);
+        return new SlideRenderer(source, motion, frameWidth, frameHeight, slide.Dim, texts, painter,
+                                 slide.Scale, slide.Background == Config.BackgroundKind.Blur);
     }
 
+    /// <param name="scale">Tamanho da foto no quadro (0,3 a 1); abaixo de 1 sobra borda preenchida pelo fundo.</param>
+    /// <param name="blurBackground">Fundo = a própria foto desfocada; falso = preto.</param>
     public SlideRenderer(SKBitmap source, Motion motion, int frameWidth, int frameHeight,
-                         double dim = 0, IReadOnlyList<ActiveText>? texts = null, TextPainter? painter = null)
+                         double dim = 0, IReadOnlyList<ActiveText>? texts = null, TextPainter? painter = null,
+                         double scale = 1, bool blurBackground = true)
     {
         _source = source;
         _motion = motion;
@@ -38,9 +44,11 @@ internal sealed class SlideRenderer : IDisposable
         _dim = dim;
         _texts = texts ?? [];
         _painter = painter;
+        _scale = Math.Clamp(scale, 0.3, 1);
         _image = SKImage.FromBitmap(source);
         _layout = SlideGeometry.Layout(source.Width, source.Height, frameWidth, frameHeight);
-        if (!_layout.Fill)
+        _needsBackground = !_layout.Fill || _scale < 1;
+        if (_needsBackground && blurBackground)
         {
             _background = BuildBackground(source, frameWidth, frameHeight);
             _backgroundImage = SKImage.FromBitmap(_background);
@@ -59,9 +67,20 @@ internal sealed class SlideRenderer : IDisposable
             SlideGeometry.Lerp(_motion.Cy0, _motion.Cy1, e));
 
         if (_backgroundImage is not null) canvas.DrawImage(_backgroundImage, 0, 0, Linear);
+        else if (_needsBackground)
+        {
+            // preto opaco: sem isso, no fade o slide anterior apareceria através das bordas
+            using var black = new SKPaint { Color = SKColors.Black };
+            canvas.DrawRect(SKRect.Create(_frameWidth, _frameHeight), black);
+        }
 
         var src = new SKRect((float)view.X0, (float)view.Y0, (float)view.X1, (float)view.Y1);
         var dst = SKRect.Create(_layout.OffsetX, _layout.OffsetY, _layout.Width, _layout.Height);
+        if (_scale < 1)
+        {
+            float w = (float)(_layout.Width * _scale), h = (float)(_layout.Height * _scale);
+            dst = SKRect.Create((_frameWidth - w) / 2, (_frameHeight - h) / 2, w, h);
+        }
         canvas.DrawImage(_image, src, dst, Cubic);
 
         if (_dim > 0)

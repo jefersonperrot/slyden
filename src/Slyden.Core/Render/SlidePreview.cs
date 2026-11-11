@@ -27,7 +27,7 @@ public static class SlidePreview
                                  IReadOnlyList<string>? fontFolders = null, Func<string, SKBitmap>? loadPhoto = null)
     {
         config.Validate();
-        var (fullW, fullH) = VideoFormat.SizeOf(config.Format);
+        var (fullW, fullH) = VideoFormat.SizeOf(config.Format, config.Resolution);
         int width = Math.Max(2, (int)Math.Round(fullW * scale)), height = Math.Max(2, (int)Math.Round(fullH * scale));
 
         var slides = SlideResolver.Resolve(config);

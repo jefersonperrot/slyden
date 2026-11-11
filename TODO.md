@@ -74,7 +74,11 @@ Direção visual: tema escuro no estilo dos aplicativos Adobe. Maquete aprovada 
 - [x] Ajuste por foto (efeito, intensidade, transição, ciclos, escurecer) e padrão global; textos (adicionar/remover/editar fonte, tamanho, alinhamento, posição, continuação)
 - [x] Revisão do usuário (11/11/2026): remover fotos (botão e tecla Delete; só tira do projeto), mover ◀ ▶, + Fotos (reincluir da pasta), tela de Projetos (novo, abrir, duplicar, excluir com confirmação), Salvar (botão e Ctrl+S; salva sozinho ao trocar de projeto ou fechar), cancelar exportação, botão "Criar capa nesta foto", correção do campo de texto que perdia o foco a cada letra
 - [x] Projetos em `%APPDATA%\Slyden\Projects\*.slyden` (`ProjectStore`); 133 testes
+- [x] Segunda revisão do usuário (11/11/2026): tela Novo projeto (nome, formato, resolução 720p/1080p/1440p/4K, pasta opcional), seleção múltipla (Ctrl/Shift/clique alterna) + Selecionar todas + remover várias, arrastar e soltar fotos/pastas do Explorador, fotos de qualquer pasta (caminho completo quando fora da pasta do projeto), tamanho da foto 30–100% (padrão + por foto) com fundo desfocado ou preto; 148 testes
 - [ ] Conferir a tela visualmente depois dessas mudanças
+- [ ] Mover várias fotos de uma vez (hoje ◀ ▶ só com uma selecionada); aplicar ajustes do painel a todas as selecionadas
+- [ ] Resolução do vídeo no app depois de criado (hoje só na criação do projeto)
+- [ ] Efeito de fundo mais próximo do CapCut: ajustar intensidade do desfoque
 - [ ] Renomear projeto; botão para escolher a foto de capa e levá-la ao início
 - [ ] Onda da música com marcas de batida na linha do tempo
 - [ ] Arrastar o texto na prévia; arrastar fotos para reordenar

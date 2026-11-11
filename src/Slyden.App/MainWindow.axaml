@@ -97,6 +97,13 @@
                   <TextBlock Classes="dim" VerticalAlignment="Center" Text="Escurecer foto" />
                   <Slider Grid.Column="1" x:Name="DimSlider" Minimum="0" Maximum="100" Value="0" />
                 </Grid>
+                <TextBlock Classes="h" Text="TAMANHO DA FOTO E FUNDO" />
+                <Grid ColumnDefinitions="*,40,120">
+                  <TextBlock Classes="dim" VerticalAlignment="Center" Text="Tamanho da foto" />
+                  <TextBlock Grid.Column="1" x:Name="ScaleValue" Classes="hint" VerticalAlignment="Center" HorizontalAlignment="Right" Text="100%" />
+                  <Slider Grid.Column="2" x:Name="ScaleSlider" Minimum="30" Maximum="100" Value="100" />
+                </Grid>
+                <WrapPanel x:Name="BackgroundChips" />
                 <Button x:Name="ResetSlideButton" Classes="btn" Content="Voltar ao padrão" HorizontalAlignment="Left" />
                 <TextBlock Classes="h" Text="CAPA" />
                 <Button x:Name="CoverButton" Classes="btn" Content="Criar capa nesta foto" HorizontalAlignment="Left" />
@@ -160,6 +167,15 @@
                 </Grid>
                 <TextBlock Classes="h" Text="TRANSIÇÃO" />
                 <WrapPanel x:Name="DefaultTransitionChips" />
+                <TextBlock Classes="h" Text="TAMANHO DA FOTO E FUNDO" />
+                <Grid ColumnDefinitions="*,40,120">
+                  <TextBlock Classes="dim" VerticalAlignment="Center" Text="Tamanho da foto" />
+                  <TextBlock Grid.Column="1" x:Name="DefaultScaleValue" Classes="hint" VerticalAlignment="Center" HorizontalAlignment="Right" Text="100%" />
+                  <Slider Grid.Column="2" x:Name="DefaultScale" Minimum="30" Maximum="100" Value="100" />
+                </Grid>
+                <WrapPanel x:Name="DefaultBackgroundChips" />
+                <TextBlock Classes="hint" TextWrapping="Wrap"
+                           Text="Abaixo de 100% a foto encolhe e sobra borda, preenchida pela mesma foto desfocada ou por preto. Vale para todas as fotos, exceto as que você ajustar na aba Slide." />
                 <TextBlock Classes="h" Text="RITMO" />
                 <Grid ColumnDefinitions="*,140">
                   <TextBlock Classes="dim" VerticalAlignment="Center" Text="Com música" />
@@ -205,13 +221,15 @@
           <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6">
             <Button x:Name="MoveLeftButton" Classes="btn" Padding="8,3" Content="◀" ToolTip.Tip="Mover para antes" />
             <Button x:Name="MoveRightButton" Classes="btn" Padding="8,3" Content="▶" ToolTip.Tip="Mover para depois" />
+            <Button x:Name="SelectAllButton" Classes="btn" Padding="10,3" Content="Selecionar todas"
+                    ToolTip.Tip="Ctrl+clique ou Shift+clique também selecionam várias" />
             <Button x:Name="RemovePhotoButton" Classes="btn" Padding="10,3" Content="Remover foto"
                     ToolTip.Tip="Tira do projeto (o arquivo não é apagado). Atalho: Delete" />
             <Button x:Name="AddPhotosButton" Classes="btn" Padding="10,3" Content="+ Fotos"
-                    ToolTip.Tip="Voltar a incluir fotos da pasta do projeto" />
+                    ToolTip.Tip="Incluir fotos (também dá para arrastar do Explorador)" />
           </StackPanel>
         </Grid>
-        <ListBox x:Name="SlideList" Height="132" Background="Transparent"
+        <ListBox x:Name="SlideList" Height="132" Background="Transparent" SelectionMode="Multiple,Toggle"
                  ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Disabled">
           <ListBox.ItemsPanel>
             <ItemsPanelTemplate><StackPanel Orientation="Horizontal" /></ItemsPanelTemplate>
@@ -232,6 +250,32 @@
         </ListBox>
       </StackPanel>
     </Border>
+    <!-- novo projeto (cobre tudo) -->
+    <Border x:Name="NewProjectView" Grid.Row="1" Grid.RowSpan="2" Background="#161618" Padding="40,28" IsVisible="False">
+      <StackPanel MaxWidth="560" Spacing="16" HorizontalAlignment="Center" VerticalAlignment="Top">
+        <TextBlock Text="Novo projeto" FontSize="22" FontWeight="Medium" />
+        <TextBlock Classes="h" Text="NOME" />
+        <TextBox x:Name="NewName" PlaceholderText="Ex.: Isadora e Lucas" />
+        <TextBlock Classes="h" Text="FORMATO" />
+        <WrapPanel x:Name="NewFormatChips" />
+        <TextBlock Classes="h" Text="RESOLUÇÃO" />
+        <WrapPanel x:Name="NewResolutionChips" />
+        <TextBlock x:Name="NewSizeInfo" Classes="hint" />
+        <TextBlock Classes="h" Text="FOTOS" />
+        <StackPanel Orientation="Horizontal" Spacing="10">
+          <Button x:Name="NewFolderButton" Classes="btn" Content="Escolher pasta de fotos…" />
+          <TextBlock x:Name="NewFolderText" Classes="dim" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="320" Text="Nenhuma pasta escolhida" />
+        </StackPanel>
+        <TextBlock Classes="hint" TextWrapping="Wrap"
+                   Text="A pasta é opcional: depois você também pode arrastar fotos para o projeto ou usar + Fotos." />
+        <TextBlock x:Name="NewMessage" Foreground="#E8A33A" TextWrapping="Wrap" />
+        <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,8,0,0">
+          <Button x:Name="NewCreateButton" Classes="btn primary" Content="Criar projeto" />
+          <Button x:Name="NewCancelButton" Classes="btn" Content="Cancelar" />
+        </StackPanel>
+      </StackPanel>
+    </Border>
+
     <!-- tela de projetos (cobre o editor) -->
     <Border x:Name="HomeView" Grid.Row="1" Grid.RowSpan="2" Background="#161618" Padding="40,28">
       <Grid RowDefinitions="Auto,*" MaxWidth="900">

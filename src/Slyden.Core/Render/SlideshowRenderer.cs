@@ -26,7 +26,7 @@ public static class SlideshowRenderer
     {
         var cfg = request.Config;
         cfg.Validate();
-        var (width, height) = VideoFormat.SizeOf(cfg.Format);
+        var (width, height) = VideoFormat.SizeOf(cfg.Format, cfg.Resolution);
         int fps = request.Fps;
 
         var slides = SlideResolver.Resolve(cfg);

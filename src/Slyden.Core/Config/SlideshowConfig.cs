@@ -9,6 +9,9 @@ public enum TransitionKind { Cut, Fade }
 
 public enum EffectOrder { Cycle, Random }
 
+/// <summary>O que aparece atrás da foto quando ela não ocupa o quadro todo.</summary>
+public enum BackgroundKind { Blur, Black }
+
 /// <summary>Padrões que valem para todas as fotos, salvo exceção em <see cref="PhotoSpec"/>.</summary>
 public sealed class SlideDefaults
 {
@@ -20,6 +23,10 @@ public sealed class SlideDefaults
     public TransitionKind Transition { get; set; } = TransitionKind.Cut;
     /// <summary>Duração do fade, em batidas.</summary>
     public double FadeBeats { get; set; } = 0.5;
+    /// <summary>Tamanho da foto dentro do quadro (0,3 a 1). Abaixo de 1 sobra borda, preenchida por <see cref="Background"/>.</summary>
+    public double Scale { get; set; } = 1;
+    /// <summary>Fundo atrás da foto: a própria foto ampliada e desfocada, ou preto.</summary>
+    public BackgroundKind Background { get; set; } = BackgroundKind.Blur;
 }
 
 /// <summary>Uma foto e, opcionalmente, o que difere do padrão.</summary>
@@ -38,6 +45,10 @@ public sealed class PhotoSpec
     public int? Length { get; set; }
     /// <summary>Escurece a foto (0 a 1) para o texto ler melhor.</summary>
     public double? Dim { get; set; }
+    /// <summary>Tamanho desta foto no quadro (0,3 a 1); sem valor, vale o padrão.</summary>
+    public double? Scale { get; set; }
+    /// <summary>Fundo desta foto; sem valor, vale o padrão.</summary>
+    public BackgroundKind? Background { get; set; }
     /// <summary>Textos sobre este slide.</summary>
     public List<TextBlock>? Texts { get; set; }
 }
@@ -56,6 +67,8 @@ public sealed class SlideshowConfig
     public double? FadeSeconds { get; set; }
     /// <summary>"16:9", "9:16" ou "1:1".</summary>
     public string Format { get; set; } = "16:9";
+    /// <summary>Lado menor do vídeo em pixels: 720, 1080, 1440 ou 2160.</summary>
+    public int Resolution { get; set; } = 1080;
     public SlideDefaults Default { get; set; } = new();
     public List<PhotoSpec> Photos { get; set; } = [];
 
@@ -108,6 +121,9 @@ public sealed class SlideshowConfig
     {
         if (!VideoFormat.IsKnown(Format))
             throw new InvalidDataException($"Formato desconhecido: \"{Format}\" (use \"16:9\", \"9:16\" ou \"1:1\").");
+        if (!VideoFormat.IsKnownResolution(Resolution))
+            throw new InvalidDataException($"Resolução inválida: {Resolution} (use 720, 1080, 1440 ou 2160).");
+        if (Default.Scale is < 0.3 or > 1) throw new InvalidDataException("default.scale deve estar entre 0,3 e 1.");
         if (SecondsPerPhoto is <= 0) throw new InvalidDataException("seconds_per_photo deve ser maior que zero.");
         if (FadeSeconds is <= 0) throw new InvalidDataException("fade_seconds deve ser maior que zero.");
         if (Bpm <= 0) throw new InvalidDataException("bpm deve ser maior que zero.");
@@ -124,6 +140,7 @@ public sealed class SlideshowConfig
             if (p.Center is { } c && (c.Length != 2 || c.Any(pt => pt.Length != 2)))
                 throw new InvalidDataException($"{p.File}: center deve ser [[x,y],[x,y]].");
             if (p.Length is < 1 or > 16) throw new InvalidDataException($"{p.File}: length deve estar entre 1 e 16.");
+            if (p.Scale is < 0.3 or > 1) throw new InvalidDataException($"{p.File}: scale deve estar entre 0,3 e 1.");
             if (p.Dim is < 0 or > 1) throw new InvalidDataException($"{p.File}: dim deve estar entre 0 e 1.");
             for (int i = 0; i < (p.Texts?.Count ?? 0); i++) p.Texts![i].Validate($"{p.File}, texto {i + 1}");
         }
