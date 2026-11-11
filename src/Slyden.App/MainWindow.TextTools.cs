@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -25,6 +25,8 @@ public partial class MainWindow
             if (TextFont.SelectedItem is string family) EditText(t => t.Font = family);
         };
 
+        InitTextAnimation();
+        InitDefaults();
         CenterTextXButton.Click += (_, _) => CenterText(vertical: false);
         CenterTextButton.Click += (_, _) => CenterText(vertical: true);
 
@@ -44,6 +46,118 @@ public partial class MainWindow
         ResetOnDoubleClick(DefaultShadow, 50);
         ResetOnDoubleClick(FadeInSlider, 0);
         ResetOnDoubleClick(FadeOutSlider, 1.5);
+    }
+
+    private readonly UserDefaultsStore _defaultsStore = new(UserDefaultsStore.DefaultPath);
+    private UserDefaults _userDefaults = new();
+    private bool _confirmingResetDefaults;
+    private Avalonia.Threading.DispatcherTimer? _resetDefaultsTimer;
+
+    private static double Num(NumericUpDown box) => box.Value is { } v ? (double)v : 0;
+
+    private void InitTextAnimation()
+    {
+        TextAnim.SelectionChanged += (_, _) =>
+        {
+            TextAnimFields.IsEnabled = TextAnim.SelectedIndex != 0;
+            EditText(t => t.Animation = TextAnim.SelectedIndex == 0 ? TextAnimation.None : TextAnimation.Fade);
+        };
+        TextDelay.ValueChanged += (_, _) => EditText(t => t.Delay = Num(TextDelay));
+        TextFadeIn.ValueChanged += (_, _) => EditText(t => t.FadeIn = Num(TextFadeIn));
+        TextFadeOut.ValueChanged += (_, _) => EditText(t => t.FadeOut = Num(TextFadeOut));
+        TextHold.ValueChanged += (_, _) => EditText(t => t.Duration = Num(TextHold) > 0 ? Num(TextHold) : null);
+    }
+
+    /// <summary>Moldura tracejada em volta do texto selecionado (só na aba Texto, com a prévia parada).</summary>
+    private void UpdateTextSelection()
+    {
+        TextSelection.IsVisible = false;
+        if (_playing || PreviewImage.Source is null || !PaneText.IsVisible) return;
+        if (Current?.Texts is not { Count: > 0 } texts || TextList.SelectedIndex is not (>= 0 and var index) || index >= texts.Count) return;
+
+        IReadOnlyList<(double Left, double Top, double Right, double Bottom)> bounds;
+        try { bounds = SlidePreview.TextBounds(_cfg, _selected); }
+        catch { return; }
+        var b = bounds[index];
+        if (b.Right <= b.Left) return;
+
+        var image = PreviewImage.Bounds;
+        const double pad = 5;
+        TextSelection.Margin = new Thickness(image.X + b.Left * image.Width - pad, image.Y + b.Top * image.Height - pad, 0, 0);
+        TextSelection.Width = (b.Right - b.Left) * image.Width + pad * 2;
+        TextSelection.Height = (b.Bottom - b.Top) * image.Height + pad * 2;
+        TextSelection.IsVisible = true;
+    }
+
+    // ---------- configuração padrão do usuário ----------
+
+    private void InitDefaults()
+    {
+        _userDefaults = _defaultsStore.Load();
+
+        PreviewImage.PropertyChanged += (_, e) =>
+        {
+            if (e.Property == BoundsProperty) UpdateTextSelection();
+        };
+
+        TextStyleDefaultButton.Click += (_, _) =>
+        {
+            if (CurrentText is not { } text) return;
+            _userDefaults.CaptureTextStyle(text);
+            SaveUserDefaults(TextStyleStatus, "Pronto: os novos textos vão usar a fonte, o tamanho, a cor e a animação deste.");
+        };
+        SaveDefaultsButton.Click += (_, _) =>
+        {
+            _userDefaults.CaptureFrom(_cfg);
+            SaveUserDefaults(DefaultsStatus, "Salvo: todo projeto novo vai começar com estes ajustes. Os projetos que já existem não mudam.");
+        };
+        ResetDefaultsButton.Click += (_, _) => ResetDefaults();
+    }
+
+    private void SaveUserDefaults(Avalonia.Controls.TextBlock status, string success)
+    {
+        try
+        {
+            _defaultsStore.Save(_userDefaults);
+            status.Text = success;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            status.Text = "Não consegui salvar o padrão: " + ex.Message;
+        }
+    }
+
+    /// <summary>Dois cliques (o segundo em até 4 s) para voltar ao padrão de fábrica.</summary>
+    private void ResetDefaults()
+    {
+        if (!_confirmingResetDefaults)
+        {
+            _confirmingResetDefaults = true;
+            ResetDefaultsButton.Content = "Confirmar?";
+            _resetDefaultsTimer ??= new Avalonia.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(4) };
+            _resetDefaultsTimer.Tick -= OnResetDefaultsTimeout;
+            _resetDefaultsTimer.Tick += OnResetDefaultsTimeout;
+            _resetDefaultsTimer.Start();
+            return;
+        }
+        OnResetDefaultsTimeout(null, EventArgs.Empty);
+        try
+        {
+            _defaultsStore.Reset();
+            _userDefaults = new UserDefaults();
+            DefaultsStatus.Text = "Padrão de fábrica restaurado para os próximos projetos e textos novos. Este projeto não mudou.";
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            DefaultsStatus.Text = "Não consegui restaurar: " + ex.Message;
+        }
+    }
+
+    private void OnResetDefaultsTimeout(object? sender, EventArgs e)
+    {
+        _confirmingResetDefaults = false;
+        _resetDefaultsTimer?.Stop();
+        ResetDefaultsButton.Content = "Voltar ao padrão de fábrica";
     }
 
     private static void ResetOnDoubleClick(Slider slider, double value) =>
@@ -145,3 +259,4 @@ public partial class MainWindow
         PreviewHit.Cursor = Cursor.Default;
     }
 }
+

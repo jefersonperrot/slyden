@@ -109,6 +109,8 @@ Direção visual: tema escuro no estilo dos aplicativos Adobe. Maquete aprovada 
 - [ ] Renomear projeto; botão para escolher a foto de capa e levá-la ao início
 - [ ] Onda da música com marcas de batida na linha do tempo
 - [x] Arrastar o texto na prévia (com ímã no centro), seletor de fonte com as fontes do computador (cada uma mostrada no próprio estilo), botões Centro horizontal / Centro do quadro e clique duplo nos sliders volta ao padrão; 178 testes
+- [x] Texto selecionado ganha moldura tracejada na prévia; animação do texto com controles (aparece após X s, fade de entrada, fica visível por Y s, fade de saída; vale em slides contínuos) e capa de exemplo com textos entrando em sequência; configuração padrão do usuário (Salvar como padrão / Voltar ao padrão de fábrica; estilo padrão dos textos novos) em %APPDATA%\Slyden\defaults.json; 187 testes
+- [ ] Mais estilos de animação de texto (subir suavemente, digitar, zoom); várias configurações salvas (modelos com nome)
 - [ ] Arrastar também o tamanho do texto (alças); cursor de mão ao passar sobre o texto; fontes dos textos de exemplo da capa que existam também no Mac
 - [ ] Incluir fotos de outras pastas (hoje só da pasta do projeto)
 - [ ] Reproduzir a prévia com música; aviso de rosto cortado na foto

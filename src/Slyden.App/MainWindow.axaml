@@ -49,6 +49,9 @@
         <Border Grid.Row="1" Background="#0F0F11" Padding="20">
           <Grid>
             <Image x:Name="PreviewImage" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center" />
+            <!-- moldura tracejada no texto selecionado -->
+            <Rectangle x:Name="TextSelection" Stroke="#3B8BFF" StrokeThickness="1.5" StrokeDashArray="4,3"
+                       HorizontalAlignment="Left" VerticalAlignment="Top" IsHitTestVisible="False" IsVisible="False" />
             <!-- camada transparente que recebe o arrastar do texto -->
             <Border x:Name="PreviewHit" Background="Transparent" />
             <TextBlock x:Name="EmptyHint" Classes="hint" Text="A prévia aparece aqui."
@@ -176,6 +179,36 @@
                       <ComboBoxItem>1</ComboBoxItem><ComboBoxItem>2</ComboBoxItem><ComboBoxItem>3</ComboBoxItem>
                     </ComboBox>
                   </Grid>
+                  <TextBlock Classes="h" Text="ANIMAÇÃO DO TEXTO" />
+                  <Grid ColumnDefinitions="*,120">
+                    <TextBlock Classes="dim" VerticalAlignment="Center" Text="Efeito" />
+                    <ComboBox Grid.Column="1" x:Name="TextAnim" HorizontalAlignment="Stretch" SelectedIndex="1">
+                      <ComboBoxItem>Nenhum (sempre visível)</ComboBoxItem><ComboBoxItem>Fade</ComboBoxItem>
+                    </ComboBox>
+                  </Grid>
+                  <StackPanel x:Name="TextAnimFields" Spacing="10">
+                    <Grid ColumnDefinitions="*,120">
+                      <TextBlock Classes="dim" VerticalAlignment="Center" Text="Aparece após (s)" />
+                      <NumericUpDown Grid.Column="1" x:Name="TextDelay" Minimum="0" Maximum="120" Increment="0.1" FormatString="0.0" Value="0" />
+                    </Grid>
+                    <Grid ColumnDefinitions="*,120">
+                      <TextBlock Classes="dim" VerticalAlignment="Center" Text="Fade de entrada (s)" />
+                      <NumericUpDown Grid.Column="1" x:Name="TextFadeIn" Minimum="0" Maximum="30" Increment="0.1" FormatString="0.0" Value="0.8" />
+                    </Grid>
+                    <Grid ColumnDefinitions="*,120">
+                      <TextBlock Classes="dim" VerticalAlignment="Center" Text="Fica visível por (s)" />
+                      <NumericUpDown Grid.Column="1" x:Name="TextHold" Minimum="0" Maximum="600" Increment="0.5" FormatString="0.0" Value="0" />
+                    </Grid>
+                    <Grid ColumnDefinitions="*,120">
+                      <TextBlock Classes="dim" VerticalAlignment="Center" Text="Fade de saída (s)" />
+                      <NumericUpDown Grid.Column="1" x:Name="TextFadeOut" Minimum="0" Maximum="30" Increment="0.1" FormatString="0.0" Value="0.8" />
+                    </Grid>
+                    <TextBlock Classes="hint" TextWrapping="Wrap"
+                               Text="Visível por 0 = até o fim do slide (ou da faixa de slides). A animação aparece ao tocar a prévia (Espaço) e no vídeo; a prévia parada mostra o texto inteiro." />
+                  </StackPanel>
+                  <Button x:Name="TextStyleDefaultButton" Classes="btn" Content="Usar este estilo como padrão dos novos textos"
+                          ToolTip.Tip="Guarda fonte, tamanho, cor, alinhamento, sombra e animação deste texto" />
+                  <TextBlock x:Name="TextStyleStatus" Classes="hint" TextWrapping="Wrap" />
                 </StackPanel>
               </StackPanel>
 
@@ -218,6 +251,14 @@
                 </Grid>
                 <TextBlock Classes="hint" TextWrapping="Wrap"
                            Text="Abaixo de 100% a foto encolhe e sobra borda, preenchida pela mesma foto desfocada ou por preto. Vale para todas as fotos, exceto as que você ajustar na aba Slide." />
+                <TextBlock Classes="h" Text="CONFIGURAÇÃO PADRÃO" />
+                <TextBlock Classes="hint" TextWrapping="Wrap"
+                           Text="Guarde os ajustes desta aba (efeitos, fundo, sombra, música, formato e resolução) como ponto de partida de todo projeto novo." />
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <Button x:Name="SaveDefaultsButton" Classes="btn" Content="Salvar como padrão" />
+                  <Button x:Name="ResetDefaultsButton" Classes="btn" Content="Voltar ao padrão de fábrica" />
+                </StackPanel>
+                <TextBlock x:Name="DefaultsStatus" Classes="hint" TextWrapping="Wrap" />
                 <TextBlock Classes="h" Text="RITMO" />
                 <Grid ColumnDefinitions="*,140">
                   <TextBlock Classes="dim" VerticalAlignment="Center" Text="Com música" />

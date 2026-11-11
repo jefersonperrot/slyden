@@ -111,13 +111,13 @@ public sealed class SlideshowPlan
     internal void Draw(SKCanvas canvas, FrameInfo f, Func<int, SlideRenderer> get)
     {
         canvas.Clear(SKColors.Black);
-        get(f.Slide).Draw(canvas, f.T, new TextTiming(f.Frame, f.Frames, Beat, Fps));
+        get(f.Slide).Draw(canvas, f.T, new TextTiming(f.Frame, f.Frames, Beat, Fps, Edges, f.Slide));
         if (f.FadeAlpha > 0)
         {
             int next = f.Slide + 1;
             using var layer = new SKPaint { Color = new SKColor(255, 255, 255, (byte)Math.Round(f.FadeAlpha * 255)) };
             canvas.SaveLayer(layer);
-            get(next).Draw(canvas, 0, new TextTiming(0, Edges[next + 1] - Edges[next], Beat, Fps));
+            get(next).Draw(canvas, 0, new TextTiming(0, Edges[next + 1] - Edges[next], Beat, Fps, Edges, next));
             canvas.Restore();
         }
     }

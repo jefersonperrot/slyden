@@ -322,8 +322,8 @@ public partial class MainWindow : Window
         NewFolderText.Text = "Nenhuma pasta escolhida";
         bool was = _loading;
         _loading = true;
-        SetChips(NewFormatChips, [0]);
-        SetChips(NewResolutionChips, [1]);
+        SetChips(NewFormatChips, [Math.Max(0, Array.IndexOf(FormatValues, _userDefaults.Format))]);
+        SetChips(NewResolutionChips, [Math.Max(0, Array.IndexOf(VideoFormat.Resolutions, _userDefaults.Resolution))]);
         _loading = was;
         UpdateNewSizeInfo();
         HomeView.IsVisible = false;
@@ -361,6 +361,7 @@ public partial class MainWindow : Window
             NewMessage.Text = "Essa pasta não tem fotos .jpg. Escolha outra ou crie o projeto sem pasta.";
             return;
         }
+        _userDefaults.ApplyTo(config); // efeitos, fundo, música... do padrão do usuário
         config.Format = FormatValues[Checked(NewFormatChips).FirstOrDefault()];
         config.Resolution = VideoFormat.Resolutions[Checked(NewResolutionChips).FirstOrDefault(1)];
 
@@ -515,6 +516,7 @@ public partial class MainWindow : Window
         TabDefault.IsChecked = index == 2; TabExport.IsChecked = index == 3;
         PaneSlide.IsVisible = index == 0; PaneText.IsVisible = index == 1;
         PaneDefault.IsVisible = index == 2; PaneExport.IsVisible = index == 3;
+        UpdateTextSelection();
     }
 
     private void BuildChips(WrapPanel panel, IReadOnlyList<string> labels, bool multi, Action<int[]> changed)
@@ -1006,12 +1008,17 @@ public partial class MainWindow : Window
         spec.Dim ??= 0.4;
         if (spec.Texts is null or { Count: 0 })
         {
+            // se o usuário definiu uma fonte padrão, a capa inteira usa ela; senão, uma combinação de exemplo
+            string? own = _userDefaults.TextStyle?.Font;
+            // os textos entram em sequência, um depois do outro, com fade suave
             spec.Texts =
             [
-                new SlideText { Text = "Wedding day", Font = "Segoe Script", Size = 0.085, Align = Slyden.Core.Config.TextAlign.Left, X = 0.08, Y = 0.30 },
-                new SlideText { Text = "Maria e João", Font = "Georgia", Bold = true, Size = 0.12, Color = "#FFF1CC", Y = 0.52, Span = 2 },
-                new SlideText { Text = DateTime.Today.ToString("dd/MM/yyyy"), Font = "Century Gothic", Size = 0.04,
-                                Align = Slyden.Core.Config.TextAlign.Right, X = 0.92, Y = 0.90 },
+                new SlideText { Text = "Wedding day", Font = own ?? "Segoe Script", Size = 0.085, Align = Slyden.Core.Config.TextAlign.Left,
+                                X = 0.08, Y = 0.30, Delay = 0.3, FadeIn = 1.0, FadeOut = 0.8 },
+                new SlideText { Text = "Maria e João", Font = own ?? "Georgia", Bold = true, Size = 0.12, Color = "#FFF1CC", Y = 0.52,
+                                Span = 2, Delay = 0.9, FadeIn = 1.2, FadeOut = 0.8 },
+                new SlideText { Text = DateTime.Today.ToString("dd/MM/yyyy"), Font = own ?? "Century Gothic", Size = 0.04,
+                                Align = Slyden.Core.Config.TextAlign.Right, X = 0.92, Y = 0.90, Delay = 1.5, FadeIn = 1.0, FadeOut = 0.8 },
             ];
         }
         _items[_selected].RefreshTags();
@@ -1058,7 +1065,8 @@ public partial class MainWindow : Window
     {
         var text = CurrentText;
         TextEditor.IsEnabled = text is not null;
-        if (text is null || _loading) return;
+        if (text is null) { UpdateTextSelection(); return; }
+        if (_loading) return;
         _loading = true;
         TextContent.Text = text.Text;
         SelectFont(text.Font);
@@ -1067,13 +1075,20 @@ public partial class MainWindow : Window
         TextX.Value = text.X * 100;
         TextY.Value = text.Y * 100;
         TextSpan.SelectedIndex = Math.Clamp(text.Span - 1, 0, 2);
+        TextAnim.SelectedIndex = text.Animation == TextAnimation.None ? 0 : 1;
+        TextAnimFields.IsEnabled = text.Animation != TextAnimation.None;
+        TextDelay.Value = (decimal)text.Delay;
+        TextFadeIn.Value = (decimal)(text.FadeIn ?? Math.Round(text.FadeBeats * 0.5, 1));
+        TextFadeOut.Value = (decimal)(text.FadeOut ?? Math.Round(text.FadeBeats * 0.5, 1));
+        TextHold.Value = (decimal)(text.Duration ?? 0);
         _loading = false;
+        UpdateTextSelection();
     }
 
     private void AddText()
     {
         if (Current is not { } spec) return;
-        (spec.Texts ??= []).Add(new SlideText { Text = "Novo texto", Font = "Georgia", Size = 0.08 });
+        (spec.Texts ??= []).Add(_userDefaults.NewText("Novo texto"));
         _items[_selected].RefreshTags();
         MarkDirty();
         ReloadTexts(select: spec.Texts.Count - 1);
@@ -1132,6 +1147,7 @@ public partial class MainWindow : Window
         if (error is not null) { SlideInfo.Text = error; return; }
         PreviewImage.Source = bitmap;
         EmptyHint.IsVisible = false;
+        UpdateTextSelection();
     }
 
     private static Bitmap ToBitmap(SKBitmap source, int quality)

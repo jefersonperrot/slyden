@@ -35,6 +35,14 @@ public sealed class TextBlock
     public TextAnimation Animation { get; set; } = TextAnimation.Fade;
     /// <summary>Duração do fade de entrada e de saída, em batidas.</summary>
     public double FadeBeats { get; set; } = 0.5;
+    /// <summary>Segundos depois do início do slide até o texto começar a aparecer (0 = já no começo).</summary>
+    public double Delay { get; set; }
+    /// <summary>Duração do fade de entrada, em segundos; sem valor, usa <see cref="FadeBeats"/>.</summary>
+    public double? FadeIn { get; set; }
+    /// <summary>Duração do fade de saída, em segundos; sem valor, usa <see cref="FadeBeats"/>.</summary>
+    public double? FadeOut { get; set; }
+    /// <summary>Quanto tempo o texto fica na tela, em segundos, contando a partir de <see cref="Delay"/>; 0 ou vazio = até o fim da faixa.</summary>
+    public double? Duration { get; set; }
     /// <summary>Em quantos slides seguidos o texto aparece (a partir deste).</summary>
     public int Span { get; set; } = 1;
 
@@ -47,6 +55,10 @@ public sealed class TextBlock
         if (LineSpacing is < 0.5 or > 3) throw new InvalidDataException($"{where}: line_spacing deve estar entre 0,5 e 3.");
         if (Outline is < 0 or > 0.3) throw new InvalidDataException($"{where}: outline deve estar entre 0 e 0,3.");
         if (FadeBeats <= 0) throw new InvalidDataException($"{where}: fade_beats deve ser maior que zero.");
+        if (Delay is < 0 or > 120) throw new InvalidDataException($"{where}: delay deve estar entre 0 e 120 segundos.");
+        if (FadeIn is < 0 or > 30) throw new InvalidDataException($"{where}: fade_in deve estar entre 0 e 30 segundos.");
+        if (FadeOut is < 0 or > 30) throw new InvalidDataException($"{where}: fade_out deve estar entre 0 e 30 segundos.");
+        if (Duration is < 0 or > 600) throw new InvalidDataException($"{where}: duration deve estar entre 0 e 600 segundos.");
         if (Span < 1) throw new InvalidDataException($"{where}: span deve ser 1 ou mais.");
         if (string.IsNullOrWhiteSpace(Font)) throw new InvalidDataException($"{where}: font não pode ser vazio.");
     }
