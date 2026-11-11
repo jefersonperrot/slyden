@@ -7,7 +7,7 @@ using SlideBeat.Core.Render;
 const string Usage = """
     Uso:
       slidebeat beats  <audio> [--photos N] [--per auto|2|4|8] [--json saida.json]
-      slidebeat render <pasta_fotos> <saida.mp4> [--audio musica.mp3] [--config config.json] [--format 16:9|9:16] [--fonts pasta]
+      slidebeat render <pasta_fotos> <saida.mp4> [--audio musica.mp3] [--config config.json] [--format 16:9|9:16|1:1] [--fonts pasta]
 
     Sem --audio, o vídeo sai mudo e usa o "bpm" da configuração.
     Se o --config indicado não existir, é criado com os padrões para você editar.

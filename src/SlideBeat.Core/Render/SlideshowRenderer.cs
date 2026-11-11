@@ -48,6 +48,7 @@ public static class SlideshowRenderer
         int units = slides.Sum(s => s.Length);
         double[] cuts;
         double beat, tempo;
+        double? fixedFadeSeconds = null;
         int perPhoto;
         if (request.AudioPath is { } audio)
         {
@@ -57,6 +58,15 @@ public static class SlideshowRenderer
             perPhoto = plan.BeatsPerPhoto;
             tempo = analysis.Tempo;
             beat = Median(analysis.BeatTimes.Zip(analysis.BeatTimes.Skip(1), (a, b) => b - a).ToArray(), 60.0 / cfg.Bpm);
+        }
+        else if (cfg.SecondsPerPhoto is { } seconds)
+        {
+            // tempo fixo (telão): "batida" = 1 s, então fade_beats dos textos também conta em segundos
+            perPhoto = 1;
+            tempo = 60;
+            beat = 1;
+            cuts = Enumerable.Range(0, units + 1).Select(i => i * seconds).ToArray();
+            fixedFadeSeconds = Math.Min(cfg.FadeSeconds ?? 1.0, seconds / 2);
         }
         else
         {
@@ -74,7 +84,7 @@ public static class SlideshowRenderer
 
         var edges = boundaries.Select(c => (int)Math.Round((c - boundaries[0]) * fps)).ToArray();
         double total = (double)edges[^1] / fps;
-        int fadeFrames = (int)Math.Round(cfg.Default.FadeBeats * beat * fps);
+        int fadeFrames = (int)Math.Round((fixedFadeSeconds ?? cfg.Default.FadeBeats * beat) * fps);
         var transitions = slides.Select(s => s.Transition).ToList();
         var painter = new TextPainter(fonts);
 

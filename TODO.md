@@ -59,9 +59,11 @@ Atualizar este arquivo a cada etapa concluída ou nova ideia.
 - [ ] Prévia do texto na interface (arrastar para posicionar)
 
 ## A fazer — novas funcionalidades (ideias)
-- [ ] Formato 1:1 (1080x1080), além de 16:9 e 9:16 — mudança pequena em `VideoFormat`; texto e enquadramento já são relativos ao quadro
-- [ ] "Duplicar vídeo" — **definir o que é**: (a) duplicar o projeto para exportar em outro formato/estilo, ou (b) exportar o mesmo slideshow em vários formatos de uma vez
-- [ ] Pequenos cortes em vídeo — **definir o escopo**: permitir clipes de vídeo entre as fotos (cortar início/fim) ou só aparar o slideshow pronto. Muda o motor (hoje só tem fotos)
+- [x] Formato 1:1 (1080x1080)
+- [x] Modo sem música em segundos (telão): `seconds_per_photo` + `fade_seconds`
+- [ ] Telão: testar com 300+ fotos (memória/tempo) e avaliar vídeo em loop
+- [ ] Duplicar projeto (interface): copia o arquivo de configuração para criar variação (com música / sem música). Opcional: exportar vários formatos de uma vez
+- Ideia para depois (fora do escopo atual): clipes de vídeo entre as fotos com corte de início/fim
 - [ ] Exportar com otimizador (estilo JpegMini): reduzir o tamanho do vídeo mantendo a qualidade (CRF/preset por conteúdo, tamanho-alvo, comparação de qualidade); também otimizar JPEG das fotos de entrada. Retoma a ideia original do JpegMini
 
 ## A fazer — interface (Avalonia)

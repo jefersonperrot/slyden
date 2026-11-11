@@ -33,6 +33,10 @@ Sem `--audio` o vídeo sai mudo e usa o `bpm` da configuração. Se o `--config`
 (efeitos, intensidade, transição e exceção por foto) para você editar. O formato do arquivo é o mesmo de
 `prototype-python/exemplo-config.json`.
 
+### Telão (sem música, tempo fixo)
+Com `"seconds_per_photo": 8` (e opcionalmente `"fade_seconds": 1`) cada foto dura o tempo indicado, sem depender de BPM.
+Vale só sem `--audio`. Formatos: `16:9`, `9:16` e `1:1`.
+
 ### Capa e textos
 Cada foto aceita `length` (ciclos de batida, para a capa durar mais), `dim` (0–1, escurece a foto) e `texts`:
 ```json

@@ -50,7 +50,11 @@ public sealed class SlideshowConfig
     [JsonConverter(typeof(AutoOrIntConverter))]
     [JsonIgnore(Condition = JsonIgnoreCondition.Never)] // senão o "auto" some do arquivo salvo
     public int? BeatsPerPhoto { get; set; }
-    /// <summary>"16:9" ou "9:16".</summary>
+    /// <summary>Só sem música: segundos por foto (ex.: telão). Se preenchido, vale no lugar de bpm/beats_per_photo.</summary>
+    public double? SecondsPerPhoto { get; set; }
+    /// <summary>Só sem música e com seconds_per_photo: duração do fade em segundos (padrão 1).</summary>
+    public double? FadeSeconds { get; set; }
+    /// <summary>"16:9", "9:16" ou "1:1".</summary>
     public string Format { get; set; } = "16:9";
     public SlideDefaults Default { get; set; } = new();
     public List<PhotoSpec> Photos { get; set; } = [];
@@ -99,7 +103,9 @@ public sealed class SlideshowConfig
     public void Validate()
     {
         if (!VideoFormat.IsKnown(Format))
-            throw new InvalidDataException($"Formato desconhecido: \"{Format}\" (use \"16:9\" ou \"9:16\").");
+            throw new InvalidDataException($"Formato desconhecido: \"{Format}\" (use \"16:9\", \"9:16\" ou \"1:1\").");
+        if (SecondsPerPhoto is <= 0) throw new InvalidDataException("seconds_per_photo deve ser maior que zero.");
+        if (FadeSeconds is <= 0) throw new InvalidDataException("fade_seconds deve ser maior que zero.");
         if (Bpm <= 0) throw new InvalidDataException("bpm deve ser maior que zero.");
         if (BeatsPerPhoto is < 1) throw new InvalidDataException("beats_per_photo deve ser 1 ou mais, ou \"auto\".");
         if (Default.Effects.Count == 0) throw new InvalidDataException("default.effects não pode ser vazio.");
