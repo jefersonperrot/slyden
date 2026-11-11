@@ -12,6 +12,7 @@ Atualizar este arquivo a cada etapa concluída ou nova ideia.
 - [x] Formato vertical 9:16 (além do 16:9)
 - [x] Decisão de tecnologia: tudo em C# (.NET + Avalonia), sem Python embutido
 - [x] Repositório Git criado
+- [x] Decisão: Python não será distribuído com o produto (fica só como referência/teste de comparação da detecção de batida)
 
 ## Fazendo
 - [ ] (nada em andamento)
@@ -27,7 +28,8 @@ Atualizar este arquivo a cada etapa concluída ou nova ideia.
 - [ ] Testes automatizados (imagens de referência / tempos das trocas)
 
 ## A fazer — qualidade do vídeo
-- [ ] Enquadramento automático com detecção de rosto (ex.: um rosto cortado no topo na foto de teste 0033)
+- [ ] Detecção de rosto com AVISO na foto (não corrige sozinho): checar se o rosto fica cortado no enquadramento inicial, final e durante o movimento do efeito; sugerir ajuste (ex.: trocar efeito ou recentrar). Ajuste automático só como botão opcional. Exemplo de teste: rosto cortado no topo na foto 0033
+- [ ] Avaliar modelo de rosto em ONNX Runtime (conferir licença do modelo) e testar em fotos de casamento (véu, perfil, de costas)
 - [ ] Opção para foto horizontal no formato vertical: inteira com fundo desfocado ou recortada
 - [ ] Mais transições (flash, deslizar)
 - [ ] Opção de duração por foto manual (fora da batida)
