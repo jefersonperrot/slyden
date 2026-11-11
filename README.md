@@ -1,4 +1,4 @@
-# SlideBeat (nome de trabalho)
+# Slyden (nome de trabalho)
 
 Programa para fotógrafos criarem slideshows em vídeo com a troca de foto sincronizada com a batida da música.
 Alternativa mais acessível ao Smart Slides para o mercado brasileiro.
@@ -19,15 +19,15 @@ A decisão é fazer o produto **todo em C# (.NET + Avalonia)**, sem Python embut
 
 ## Motor em C# (em andamento)
 ```
-src/SlideBeat.Core    motor: áudio, detecção de batida, plano de trocas, configuração e render (SkiaSharp + ffmpeg)
-src/SlideBeat.Cli     linha de comando para testar o motor
-tests/SlideBeat.Tests testes xUnit
+src/Slyden.Core    motor: áudio, detecção de batida, plano de trocas, configuração e render (SkiaSharp + ffmpeg)
+src/Slyden.Cli     linha de comando para testar o motor
+tests/Slyden.Tests testes xUnit
 ```
-Precisa do .NET 9 SDK e de um `ffmpeg` (ao lado do programa, no PATH, ou na variável `SLIDEBEAT_FFMPEG`).
+Precisa do .NET 9 SDK e de um `ffmpeg` (ao lado do programa, no PATH, ou na variável `SLYDEN_FFMPEG`).
 ```
 dotnet test
-dotnet run --project src/SlideBeat.Cli -- beats musica.mp3 --photos 30 --json batidas.json
-dotnet run --project src/SlideBeat.Cli -- render pasta_fotos saida.mp4 --audio musica.mp3 --config config.json --format 9:16
+dotnet run --project src/Slyden.Cli -- beats musica.mp3 --photos 30 --json batidas.json
+dotnet run --project src/Slyden.Cli -- render pasta_fotos saida.mp4 --audio musica.mp3 --config config.json --format 9:16
 ```
 Sem `--audio` o vídeo sai mudo e usa o `bpm` da configuração. Se o `--config` não existir, é criado com os padrões
 (efeitos, intensidade, transição e exceção por foto) para você editar. O formato do arquivo é o mesmo de

@@ -1,4 +1,4 @@
-# TODO — SlideBeat
+# TODO — Slyden
 
 Atualizar este arquivo a cada etapa concluída ou nova ideia.
 
@@ -14,7 +14,7 @@ Atualizar este arquivo a cada etapa concluída ou nova ideia.
 - [x] Repositório Git criado
 - [x] Decisão: Python não será distribuído com o produto (fica só como referência/teste de comparação da detecção de batida)
 
-- [x] Solução .NET 9 criada: `SlideBeat.Core` (motor), `SlideBeat.Cli`, `SlideBeat.Tests` (xUnit)
+- [x] Solução .NET 9 criada: `Slyden.Core` (motor), `Slyden.Cli`, `Slyden.Tests` (xUnit)
 - [x] Áudio via ffmpeg para PCM mono (`AudioDecoder`, `FfmpegLocator`)
 - [x] Detecção de batida em C# (FFT própria, mel, força de onset, tempo, programação dinâmica) — sem dependências externas
 - [x] Início do compasso (fase mais forte) e troca a cada 2/4/8 batidas ("auto") em `CutPlanner`
@@ -22,7 +22,7 @@ Atualizar este arquivo a cada etapa concluída ou nova ideia.
 - [x] 11 testes automatizados passando; detecção de 244 s de áudio em ~2 s
 - [x] Render em C# (SkiaSharp + ffmpeg): efeitos, padrão + exceção por foto, corte e fade na batida, 16:9 e 9:16, fundo desfocado, orientação EXIF
 - [x] Configuração em JSON (`SlideshowConfig`) compatível com o arquivo do protótipo, com validação e mensagens de erro claras
-- [x] CLI: `slidebeat render <fotos> <saida.mp4> [--audio] [--config] [--format]`; grava em arquivo `.partial.mp4` e só renomeia no fim (cancelar não deixa vídeo pela metade)
+- [x] CLI: `slyden render <fotos> <saida.mp4> [--audio] [--config] [--format]`; grava em arquivo `.partial.mp4` e só renomeia no fim (cancelar não deixa vídeo pela metade)
 - [x] Paridade com o protótipo: mesmos quadros (PSNR 41–47 dB) com a mesma configuração, sem música
 - [x] 67 testes automatizados (config, geometria, linha do tempo, desenho em pixels, EXIF, batida)
 - [x] Corrigido "tranco" nos movimentos laterais/verticais: a foto ficava parada e arrancava de repente porque o movimento pedia mais do que o zoom permitia (a borda cortava). Agora o movimento usa exatamente a margem livre da foto. O protótipo Python ainda tem esse defeito (não será corrigido; serve só de referência)
