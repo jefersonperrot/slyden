@@ -27,6 +27,37 @@ public class ScaleAndResolutionTests
         return frame;
     }
 
+    private static SKColor PixelBelowPhoto(double shadow)
+    {
+        // fundo preto liso e foto branca a 50%: o pixel logo abaixo da foto só escurece se houver sombra
+        using var slide = new SlideRenderer(Solid(300, 200, SKColors.White), Still, W, H, scale: 0.5, blurBackground: false, shadow: shadow);
+        using var frame = new SKBitmap(W, H);
+        using var canvas = new SKCanvas(frame);
+        slide.Draw(canvas, 0);
+        return frame.GetPixel(W / 2, H / 2 + (int)(H * 0.25) + 3);
+    }
+
+    [Fact]
+    public void Shadow_darkens_the_area_just_outside_the_photo()
+    {
+        Assert.Equal(0, PixelBelowPhoto(0).Red);
+        Assert.Equal(0, PixelBelowPhoto(1).Red); // sobre fundo preto continua preto
+    }
+
+    [Fact]
+    public void Shadow_shows_over_a_blurred_background()
+    {
+        using var noShadow = new SlideRenderer(Solid(300, 200, SKColors.White), Still, W, H, scale: 0.5, shadow: 0);
+        using var withShadow = new SlideRenderer(Solid(300, 200, SKColors.White), Still, W, H, scale: 0.5, shadow: 1);
+        using var a = new SKBitmap(W, H);
+        using var b = new SKBitmap(W, H);
+        using (var c = new SKCanvas(a)) noShadow.Draw(c, 0);
+        using (var c = new SKCanvas(b)) withShadow.Draw(c, 0);
+        int y = H / 2 + (int)(H * 0.25) + 3;
+        Assert.True(b.GetPixel(W / 2, y).Red < a.GetPixel(W / 2, y).Red - 20);
+        Assert.Equal(a.GetPixel(3, 3), b.GetPixel(3, 3)); // longe da foto não muda
+    }
+
     [Fact]
     public void Full_scale_fills_the_frame_with_the_photo()
     {

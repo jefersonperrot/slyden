@@ -17,6 +17,7 @@ internal sealed class SlideRenderer : IDisposable
     private readonly int _frameWidth, _frameHeight;
     private readonly double _dim;
     private readonly double _scale;
+    private readonly double _shadow;
     private readonly bool _needsBackground;
     private readonly IReadOnlyList<ActiveText> _texts;
     private readonly TextPainter? _painter;
@@ -29,15 +30,16 @@ internal sealed class SlideRenderer : IDisposable
         var motion = SlideResolver.MotionOf(slide, source.Width, source.Height, (double)layout.Width / layout.Height);
         return new SlideRenderer(source, motion, frameWidth, frameHeight, slide.Dim, texts, painter,
                                  slide.Scale, slide.Background == Config.BackgroundKind.Blur,
-                                 slide.BackgroundBlur, slide.BackgroundDim);
+                                 slide.BackgroundBlur, slide.BackgroundDim, slide.Shadow);
     }
 
     /// <param name="scale">Tamanho da foto no quadro (0,3 a 1); abaixo de 1 sobra borda preenchida pelo fundo.</param>
     /// <param name="blurBackground">Fundo = a própria foto desfocada; falso = preto.</param>
     public SlideRenderer(SKBitmap source, Motion motion, int frameWidth, int frameHeight,
                          double dim = 0, IReadOnlyList<ActiveText>? texts = null, TextPainter? painter = null,
-                         double scale = 1, bool blurBackground = true, double backgroundBlur = 1, double backgroundDim = 0.1)
+                         double scale = 1, bool blurBackground = true, double backgroundBlur = 1, double backgroundDim = 0.1, double shadow = 0)
     {
+        _shadow = Math.Clamp(shadow, 0, 1);
         _source = source;
         _motion = motion;
         _frameWidth = frameWidth;
@@ -81,6 +83,18 @@ internal sealed class SlideRenderer : IDisposable
         {
             float w = (float)(_layout.Width * _scale), h = (float)(_layout.Height * _scale);
             dst = SKRect.Create((_frameWidth - w) / 2, (_frameHeight - h) / 2, w, h);
+            if (_shadow > 0)
+            {
+                float side = Math.Min(_frameWidth, _frameHeight);
+                float sigma = side * 0.018f;
+                using var paint = new SKPaint
+                {
+                    Color = SKColors.Black,
+                    ImageFilter = SKImageFilter.CreateDropShadowOnly(0, side * 0.01f, sigma, sigma,
+                        new SKColor(0, 0, 0, (byte)Math.Round(_shadow * 0.75 * 255))),
+                };
+                canvas.DrawRect(dst, paint);
+            }
         }
         canvas.DrawImage(_image, src, dst, Cubic);
 

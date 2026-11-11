@@ -31,6 +31,8 @@ public sealed class SlideDefaults
     public double BackgroundBlur { get; set; } = 1;
     /// <summary>Quanto o fundo desfocado é escurecido (0 = como a foto; 0,1 padrão; até 0,8).</summary>
     public double BackgroundDim { get; set; } = 0.1;
+    /// <summary>Sombra atrás da foto quando ela é menor que o quadro (0 = sem sombra, 1 = forte).</summary>
+    public double Shadow { get; set; } = 0.5;
 }
 
 /// <summary>Uma foto e, opcionalmente, o que difere do padrão.</summary>
@@ -130,6 +132,7 @@ public sealed class SlideshowConfig
         if (Default.Scale is < 0.3 or > 1) throw new InvalidDataException("default.scale deve estar entre 0,3 e 1.");
         if (Default.BackgroundBlur is < 0.3 or > 3) throw new InvalidDataException("default.background_blur deve estar entre 0,3 e 3.");
         if (Default.BackgroundDim is < 0 or > 0.8) throw new InvalidDataException("default.background_dim deve estar entre 0 e 0,8.");
+        if (Default.Shadow is < 0 or > 1) throw new InvalidDataException("default.shadow deve estar entre 0 e 1.");
         if (SecondsPerPhoto is <= 0) throw new InvalidDataException("seconds_per_photo deve ser maior que zero.");
         if (FadeSeconds is <= 0) throw new InvalidDataException("fade_seconds deve ser maior que zero.");
         if (Bpm <= 0) throw new InvalidDataException("bpm deve ser maior que zero.");

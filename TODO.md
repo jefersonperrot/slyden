@@ -87,7 +87,8 @@ Direção visual: tema escuro no estilo dos aplicativos Adobe. Maquete aprovada 
 - [ ] Resolução do vídeo no app depois de criado (hoje só na criação do projeto)
 - [x] Fundo desfocado mais claro, estilo CapCut (escurecimento 45% → 10%); `background_blur` e `background_dim` no padrão do arquivo (ainda sem controle na tela)
 - [x] Clique simples seleciona uma foto só; Ctrl/Shift para várias
-- [ ] Controles de desfoque e brilho do fundo no painel
+- [x] Sombra atrás da foto reduzida (`shadow`, controle "Sombra da foto" na aba Padrão, padrão 50%); atalho Espaço toca/para a prévia (165 testes)
+- [ ] Controles de desfoque e brilho do fundo no painel; sombra por foto
 - [ ] Renomear projeto; botão para escolher a foto de capa e levá-la ao início
 - [ ] Onda da música com marcas de batida na linha do tempo
 - [ ] Arrastar o texto na prévia; arrastar fotos para reordenar

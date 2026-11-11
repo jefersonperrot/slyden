@@ -163,6 +163,19 @@ public partial class MainWindow : Window
             ScaleValue.Text = $"{ScaleSlider.Value:0}%";
             EditSlide(s => s.Scale = ScaleSlider.Value / 100);
         };
+        DefaultShadow.ValueChanged += (_, _) =>
+        {
+            DefaultShadowValue.Text = $"{DefaultShadow.Value:0}%";
+            EditDefault(() => _cfg.Default.Shadow = DefaultShadow.Value / 100);
+        };
+        AddHandler(KeyDownEvent, (_, e) =>
+        {
+            if (e.Key != Key.Space || e.KeyModifiers != KeyModifiers.None) return;
+            if (!PlayButton.IsEffectivelyVisible || !PlayButton.IsEnabled) return;
+            if (FocusManager?.GetFocusedElement() is TextBox) return;
+            e.Handled = true;
+            _ = TogglePlayAsync();
+        }, RoutingStrategies.Tunnel);
         DefaultScale.ValueChanged += (_, _) =>
         {
             DefaultScaleValue.Text = $"{DefaultScale.Value:0}%";
@@ -350,6 +363,8 @@ public partial class MainWindow : Window
         DefaultIntensity.Value = _cfg.Default.Intensity * 100;
         DefaultScale.Value = _cfg.Default.Scale * 100;
         DefaultScaleValue.Text = $"{DefaultScale.Value:0}%";
+        DefaultShadow.Value = _cfg.Default.Shadow * 100;
+        DefaultShadowValue.Text = $"{DefaultShadow.Value:0}%";
         SetChips(DefaultBackgroundChips, [(int)_cfg.Default.Background]);
         BeatsBox.SelectedIndex = _cfg.BeatsPerPhoto switch { 2 => 1, 4 => 2, 8 => 3, _ => 0 };
         SecondsBox.SelectedIndex = _cfg.SecondsPerPhoto switch { 5 => 1, 8 => 2, 10 => 3, _ => 0 };

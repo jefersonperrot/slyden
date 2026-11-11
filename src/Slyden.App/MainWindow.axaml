@@ -54,7 +54,7 @@
         <Border Grid.Row="2" BorderBrush="#333338" BorderThickness="0,1,0,0" Padding="12,8">
           <Grid ColumnDefinitions="Auto,Auto,Auto,*,Auto" ColumnSpacing="12">
             <Button x:Name="PlayButton" Classes="btn" Content="▶  Reproduzir" MinWidth="120"
-                    ToolTip.Tip="Toca o slideshow a partir da foto selecionada, com a música" />
+                    ToolTip.Tip="Toca o slideshow a partir da foto selecionada, com a música (atalho: Espaço)" />
             <TextBlock Grid.Column="1" x:Name="PlayTime" Classes="dim" VerticalAlignment="Center" MinWidth="90" Text="" />
             <TextBlock Grid.Column="2" Classes="dim" VerticalAlignment="Center" Text="Movimento" />
             <Slider Grid.Column="3" x:Name="MotionSlider" Minimum="0" Maximum="1" Value="0.5" />
@@ -177,6 +177,11 @@
                   <Slider Grid.Column="2" x:Name="DefaultScale" Minimum="30" Maximum="100" Value="100" />
                 </Grid>
                 <WrapPanel x:Name="DefaultBackgroundChips" />
+                <Grid ColumnDefinitions="*,40,120">
+                  <TextBlock Classes="dim" VerticalAlignment="Center" Text="Sombra da foto" />
+                  <TextBlock Grid.Column="1" x:Name="DefaultShadowValue" Classes="hint" VerticalAlignment="Center" HorizontalAlignment="Right" Text="50%" />
+                  <Slider Grid.Column="2" x:Name="DefaultShadow" Minimum="0" Maximum="100" Value="50" />
+                </Grid>
                 <TextBlock Classes="hint" TextWrapping="Wrap"
                            Text="Abaixo de 100% a foto encolhe e sobra borda, preenchida pela mesma foto desfocada ou por preto. Vale para todas as fotos, exceto as que você ajustar na aba Slide." />
                 <TextBlock Classes="h" Text="RITMO" />
