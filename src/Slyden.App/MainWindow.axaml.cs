@@ -159,6 +159,7 @@ public partial class MainWindow : Window
         ProjectList.DoubleTapped += (_, _) => { if (ProjectList.SelectedItem is ProjectItem p) OpenProject(p.Entry.Project); };
         SaveButton.Click += (_, _) => Save();
         MusicButton.Click += async (_, _) => await ChooseMusicAsync();
+        RemoveMusicButton.Click += (_, _) => RemoveMusic();
         ExportButton.Click += async (_, _) => { ShowTab(3); await ExportOrCancelAsync(); };
         ExportButton2.Click += async (_, _) => await ExportOrCancelAsync();
         CancelExportButton.Click += (_, _) => CancelExport();
@@ -847,7 +848,17 @@ public partial class MainWindow : Window
             FileTypeFilter = [new FilePickerFileType("Áudio") { Patterns = ["*.mp3", "*.wav", "*.m4a", "*.aac", "*.flac"] }],
         });
         if (picked.Count == 0 || picked[0].TryGetLocalPath() is not { } path) return;
+        StopPlayback(refresh: true);
         _audio = path;
+        MarkDirty();
+        UpdateSummary();
+    }
+
+    private void RemoveMusic()
+    {
+        if (_audio is null) return;
+        StopPlayback(refresh: true);
+        _audio = null;
         MarkDirty();
         UpdateSummary();
     }
@@ -878,6 +889,8 @@ public partial class MainWindow : Window
 
     private void UpdateSummary()
     {
+        RemoveMusicButton.IsVisible = _audio is not null;
+        SecondsWarning.IsVisible = _audio is not null && _cfg.SecondsPerPhoto is not null;
         var (format, resolution) = ExportChoice();
         var (w, h) = VideoFormat.SizeOf(format, resolution);
         ExportSummary.Text = $"Vai exportar em {format} ({w}×{h}). " +

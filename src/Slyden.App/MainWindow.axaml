@@ -19,6 +19,7 @@
           <TextBlock x:Name="SaveState" Classes="hint" VerticalAlignment="Center" />
           <Button x:Name="SaveButton" Classes="btn" Content="Salvar" />
           <Button x:Name="MusicButton" Classes="btn" Content="Música…" />
+          <Button x:Name="RemoveMusicButton" Classes="btn" Content="Remover música" IsVisible="False" />
           <Button x:Name="ExportButton" Classes="btn primary" Content="Exportar" />
         </StackPanel>
       </Grid>
@@ -213,6 +214,8 @@
                     <ComboBoxItem>Pelas batidas (BPM)</ComboBoxItem><ComboBoxItem>Segundos por foto</ComboBoxItem>
                   </ComboBox>
                 </Grid>
+                <TextBlock x:Name="SecondsWarning" Foreground="#E8A33A" TextWrapping="Wrap" IsVisible="False"
+                           Text="Há música neste projeto, então os segundos por foto não são usados: as trocas seguem as batidas. Para usar segundos fixos, clique em Remover música." />
                 <Grid x:Name="SecondsRow" ColumnDefinitions="*,140" IsVisible="False">
                   <TextBlock Classes="dim" VerticalAlignment="Center" Text="Segundos por foto" />
                   <NumericUpDown Grid.Column="1" x:Name="SecondsValue" Minimum="0.5" Maximum="120" Increment="0.5"
