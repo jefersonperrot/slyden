@@ -58,7 +58,14 @@ Atualizar este arquivo a cada etapa concluída ou nova ideia.
 - [ ] Fontes: incluir no instalador fontes com licença livre (OFL); conferir a licença de cada uma
 - [ ] Prévia do texto na interface (arrastar para posicionar)
 
+## A fazer — novas funcionalidades (ideias)
+- [ ] Formato 1:1 (1080x1080), além de 16:9 e 9:16 — mudança pequena em `VideoFormat`; texto e enquadramento já são relativos ao quadro
+- [ ] "Duplicar vídeo" — **definir o que é**: (a) duplicar o projeto para exportar em outro formato/estilo, ou (b) exportar o mesmo slideshow em vários formatos de uma vez
+- [ ] Pequenos cortes em vídeo — **definir o escopo**: permitir clipes de vídeo entre as fotos (cortar início/fim) ou só aparar o slideshow pronto. Muda o motor (hoje só tem fotos)
+- [ ] Exportar com otimizador (estilo JpegMini): reduzir o tamanho do vídeo mantendo a qualidade (CRF/preset por conteúdo, tamanho-alvo, comparação de qualidade); também otimizar JPEG das fotos de entrada. Retoma a ideia original do JpegMini
+
 ## A fazer — interface (Avalonia)
+Direção visual: tema escuro no estilo dos aplicativos Adobe (Lightroom/Premiere). Prévia grande no centro, fotos em linha do tempo embaixo, painel lateral direito com efeitos, textos e exportação.
 - [ ] Escolher pasta de fotos e música
 - [ ] Tela de padrões (efeitos, intensidade, transição, ritmo)
 - [ ] Ajuste por foto + reordenar fotos
