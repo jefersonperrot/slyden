@@ -19,7 +19,7 @@ A decisão é fazer o produto **todo em C# (.NET + Avalonia)**, sem Python embut
 
 ## Motor em C# (em andamento)
 ```
-src/SlideBeat.Core    motor: áudio, detecção de batida, plano de trocas
+src/SlideBeat.Core    motor: áudio, detecção de batida, plano de trocas, configuração e render (SkiaSharp + ffmpeg)
 src/SlideBeat.Cli     linha de comando para testar o motor
 tests/SlideBeat.Tests testes xUnit
 ```
@@ -27,7 +27,11 @@ Precisa do .NET 9 SDK e de um `ffmpeg` (ao lado do programa, no PATH, ou na vari
 ```
 dotnet test
 dotnet run --project src/SlideBeat.Cli -- beats musica.mp3 --photos 30 --json batidas.json
+dotnet run --project src/SlideBeat.Cli -- render pasta_fotos saida.mp4 --audio musica.mp3 --config config.json --format 9:16
 ```
+Sem `--audio` o vídeo sai mudo e usa o `bpm` da configuração. Se o `--config` não existir, é criado com os padrões
+(efeitos, intensidade, transição e exceção por foto) para você editar. O formato do arquivo é o mesmo de
+`prototype-python/exemplo-config.json`.
 
 ## Rodar o protótipo Python (referência)
 ```

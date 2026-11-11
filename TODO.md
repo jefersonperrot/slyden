@@ -20,6 +20,11 @@ Atualizar este arquivo a cada etapa concluída ou nova ideia.
 - [x] Início do compasso (fase mais forte) e troca a cada 2/4/8 batidas ("auto") em `CutPlanner`
 - [x] Comparado com o protótipo na mesma música: tempo idêntico (136 BPM) e as 30 trocas coincidem (0 ms); o C# só começa uma troca antes
 - [x] 11 testes automatizados passando; detecção de 244 s de áudio em ~2 s
+- [x] Render em C# (SkiaSharp + ffmpeg): efeitos, padrão + exceção por foto, corte e fade na batida, 16:9 e 9:16, fundo desfocado, orientação EXIF
+- [x] Configuração em JSON (`SlideshowConfig`) compatível com o arquivo do protótipo, com validação e mensagens de erro claras
+- [x] CLI: `slidebeat render <fotos> <saida.mp4> [--audio] [--config] [--format]`; grava em arquivo `.partial.mp4` e só renomeia no fim (cancelar não deixa vídeo pela metade)
+- [x] Paridade com o protótipo: mesmos quadros (PSNR 41–47 dB) com a mesma configuração, sem música
+- [x] 59 testes automatizados (config, geometria, linha do tempo, desenho em pixels, EXIF, batida)
 
 ## Fazendo
 - [ ] (nada em andamento)
@@ -27,10 +32,11 @@ Atualizar este arquivo a cada etapa concluída ou nova ideia.
 ## A fazer — motor (C#)
 - [ ] Testar a detecção com mais músicas (ritmo lento, andamento variável, sem bateria) e comparar com o protótipo
 - [ ] Ajustar o corte de batidas fracas nas pontas (o C# manteve 5 batidas a mais que o protótipo)
-- [ ] Render dos quadros com SkiaSharp e envio ao ffmpeg
-- [ ] Efeitos, transições e configuração (padrão + por foto) iguais ao protótipo
-- [ ] Formatos 16:9 e 9:16
-- [ ] Testes automatizados (imagens de referência / tempos das trocas)
+- [ ] Desempenho do render: ~8 quadros/s (60 s de vídeo em ~4 min). Medir onde está o gargalo (desenho no Skia x codificação x264) e acelerar (preset, threads, pré-redução de fotos grandes, codificador de hardware)
+- [ ] Testar com fotos grandes (6000 px, 20+ MP) e pastas com 300+ fotos (memória)
+- [ ] Mensagem útil se o ffmpeg não tiver libx264 / se faltar espaço em disco
+- [ ] Conferir compatibilidade do SkiaSharp 4.x com a versão do Avalonia escolhida (ao criar o app)
+- [ ] Teste automático de ponta a ponta com ffmpeg (hoje o render completo é conferido manualmente)
 
 ## A fazer — qualidade do vídeo
 - [ ] Detecção de rosto com AVISO na foto (não corrige sozinho): checar se o rosto fica cortado no enquadramento inicial, final e durante o movimento do efeito; sugerir ajuste (ex.: trocar efeito ou recentrar). Ajuste automático só como botão opcional. Exemplo de teste: rosto cortado no topo na foto 0033
