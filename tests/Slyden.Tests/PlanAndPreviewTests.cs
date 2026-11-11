@@ -1,4 +1,4 @@
-using SkiaSharp;
+﻿using SkiaSharp;
 using Slyden.Core.Audio;
 using Slyden.Core.Config;
 using Slyden.Core.Render;
@@ -54,6 +54,55 @@ public class PlanAndPreviewTests
         Assert.Equal(plan.Edges[^1], plan.FrameCount);
     }
 
+    private static BeatAnalysis Music(double seconds, double beat = 0.5)
+    {
+        double[] beats = Enumerable.Range(0, (int)(seconds / beat) - 1).Select(i => 0.3 + i * beat).ToArray();
+        return new BeatAnalysis(60 / beat, beats, beats.Select(_ => 1.0).ToArray(), seconds);
+    }
+
+    [Fact]
+    public void Fit_music_mode_spreads_the_photos_over_the_whole_song()
+    {
+        var cfg = Fixed(2, Enumerable.Repeat(1, 10).ToArray()); // 10 fotos, ritmo automático
+        var plan = SlideshowPlan.Build(cfg, 30, Music(67));
+
+        Assert.Equal(10, plan.Slides.Count);
+        Assert.Equal(67, plan.TotalSeconds, 1);                 // a música toda
+        Assert.Equal(0, plan.AudioStart, 6);                    // desde o começo dela
+        // nenhum slide é muito mais longo que outro (só diferem em ±1 batida, fora o primeiro e o último)
+        var lengths = plan.Edges.Zip(plan.Edges.Skip(1), (a, b) => b - a).Skip(1).SkipLast(1).ToArray();
+        Assert.True(lengths.Max() - lengths.Min() <= 30 * 0.5 + 1, string.Join(",", lengths));
+    }
+
+    [Fact]
+    public void Fit_slides_mode_keeps_the_video_as_long_as_the_photos_need()
+    {
+        var cfg = Fixed(2, Enumerable.Repeat(1, 10).ToArray());
+        cfg.MusicMode = MusicMode.FitSlides;
+        var plan = SlideshowPlan.Build(cfg, 30, Music(67));
+
+        Assert.Equal(10, plan.Slides.Count);
+        Assert.True(plan.TotalSeconds < 67 - 10, $"{plan.TotalSeconds}"); // cortou o fim da música
+    }
+
+    [Fact]
+    public void Fixed_beats_per_photo_ignores_fit_music()
+    {
+        var cfg = Fixed(2, 1, 1, 1);
+        cfg.BeatsPerPhoto = 4;
+        var plan = SlideshowPlan.Build(cfg, 30, Music(67));
+        Assert.Equal(60, plan.Edges[1] - plan.Edges[0]);
+    }
+
+    [Fact]
+    public void Fit_music_with_more_photos_than_beats_falls_back_to_one_photo_per_beat()
+    {
+        var cfg = Fixed(2, Enumerable.Repeat(1, 30).ToArray()); // 31 fotos, 9 batidas
+        var plan = SlideshowPlan.Build(cfg, 30, Music(5));
+        Assert.True(plan.Slides.Count < 31);
+        Assert.True(plan.Slides.Count >= 1);
+    }
+
     [Fact]
     public void Plan_without_photos_is_rejected()
     {
@@ -98,3 +147,4 @@ public class PlanAndPreviewTests
         Assert.True(px.Green > 150 && px.Red < 60);
     }
 }
+

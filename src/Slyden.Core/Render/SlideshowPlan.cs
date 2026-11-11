@@ -47,7 +47,10 @@ public sealed class SlideshowPlan
         int perPhoto;
         if (analysis is not null)
         {
-            var plan = CutPlanner.Plan(analysis, units, cfg.BeatsPerPhoto);
+            // "ajustar à música" só vale no ritmo automático; com N batidas por foto escolhido, o usuário fixou o ritmo
+            var plan = (cfg.MusicMode == MusicMode.FitMusic && cfg.BeatsPerPhoto is null
+                           ? CutPlanner.PlanToFit(analysis, units) : null)
+                       ?? CutPlanner.Plan(analysis, units, cfg.BeatsPerPhoto);
             cuts = plan.CutTimes;
             perPhoto = plan.BeatsPerPhoto;
             tempo = analysis.Tempo;

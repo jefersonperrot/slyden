@@ -230,6 +230,18 @@ public partial class MainWindow : Window
 
         DefaultIntensity.ValueChanged += (_, _) => EditDefault(() => _cfg.Default.Intensity = DefaultIntensity.Value / 100);
         BeatsBox.SelectionChanged += (_, _) => EditDefault(() => _cfg.BeatsPerPhoto = BeatsBox.SelectedIndex switch { 1 => 2, 2 => 4, 3 => 8, _ => null });
+        MusicModeBox.SelectionChanged += (_, _) =>
+            EditDefault(() => _cfg.MusicMode = MusicModeBox.SelectedIndex == 1 ? MusicMode.FitSlides : MusicMode.FitMusic);
+        FadeInSlider.ValueChanged += (_, _) =>
+        {
+            FadeInValue.Text = Seconds(FadeInSlider.Value);
+            EditDefault(() => _cfg.AudioFadeIn = FadeInSlider.Value);
+        };
+        FadeOutSlider.ValueChanged += (_, _) =>
+        {
+            FadeOutValue.Text = Seconds(FadeOutSlider.Value);
+            EditDefault(() => _cfg.AudioFadeOut = FadeOutSlider.Value);
+        };
         SecondsBox.SelectionChanged += (_, _) => EditDefault(() => _cfg.SecondsPerPhoto = SecondsBox.SelectedIndex switch { 1 => 5, 2 => 8, 3 => 10, _ => null });
 
         TextList.SelectionChanged += (_, _) => LoadTextEditor();
@@ -411,6 +423,8 @@ public partial class MainWindow : Window
         _ = LoadThumbnailsAsync(_items.ToList(), _folder);
     }
 
+    private static string Seconds(double s) => s == 0 ? "0 s" : $"{s:0.#} s";
+
     private void SyncGlobalControls()
     {
         SetChips(DefaultEffectChips, _cfg.Default.Effects.Select(e => Array.IndexOf(Effects, e)).Where(i => i >= 0).ToArray());
@@ -430,6 +444,11 @@ public partial class MainWindow : Window
         }
         BeatsBox.SelectedIndex = _cfg.BeatsPerPhoto switch { 2 => 1, 4 => 2, 8 => 3, _ => 0 };
         SecondsBox.SelectedIndex = _cfg.SecondsPerPhoto switch { 5 => 1, 8 => 2, 10 => 3, _ => 0 };
+        MusicModeBox.SelectedIndex = _cfg.MusicMode == MusicMode.FitSlides ? 1 : 0;
+        FadeInSlider.Value = _cfg.AudioFadeIn;
+        FadeOutSlider.Value = _cfg.AudioFadeOut;
+        FadeInValue.Text = Seconds(_cfg.AudioFadeIn);
+        FadeOutValue.Text = Seconds(_cfg.AudioFadeOut);
         Fmt169.IsChecked = _cfg.Format == "16:9";
         Fmt916.IsChecked = _cfg.Format == "9:16";
         Fmt11.IsChecked = _cfg.Format == "1:1";

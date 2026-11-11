@@ -12,6 +12,15 @@ public enum EffectOrder { Cycle, Random }
 /// <summary>O que aparece atrás da foto quando ela não ocupa o quadro todo.</summary>
 public enum BackgroundKind { Blur, Black, Color }
 
+/// <summary>Quem manda no tamanho do vídeo quando há música.</summary>
+public enum MusicMode
+{
+    /// <summary>O vídeo dura a música toda: as fotos são espalhadas por ela (só no ritmo "auto").</summary>
+    FitMusic,
+    /// <summary>O vídeo dura o que as fotos pedem e a música é cortada no fim.</summary>
+    FitSlides,
+}
+
 /// <summary>Padrões que valem para todas as fotos, salvo exceção em <see cref="PhotoSpec"/>.</summary>
 public sealed class SlideDefaults
 {
@@ -69,6 +78,12 @@ public sealed class SlideshowConfig
     [JsonConverter(typeof(AutoOrIntConverter))]
     [JsonIgnore(Condition = JsonIgnoreCondition.Never)] // senão o "auto" some do arquivo salvo
     public int? BeatsPerPhoto { get; set; }
+    /// <summary>"fit_music" (padrão): as fotos se distribuem pela música toda; "fit_slides": a música é cortada onde as fotos acabam.</summary>
+    public MusicMode MusicMode { get; set; } = MusicMode.FitMusic;
+    /// <summary>Entrada gradual da música, em segundos (0 = seca).</summary>
+    public double AudioFadeIn { get; set; } = 0;
+    /// <summary>Saída gradual da música no fim do vídeo, em segundos (0 = seca).</summary>
+    public double AudioFadeOut { get; set; } = 1.5;
     /// <summary>Só sem música: segundos por foto (ex.: telão). Se preenchido, vale no lugar de bpm/beats_per_photo.</summary>
     public double? SecondsPerPhoto { get; set; }
     /// <summary>Só sem música e com seconds_per_photo: duração do fade em segundos (padrão 1).</summary>
@@ -137,6 +152,8 @@ public sealed class SlideshowConfig
         if (!HexColor.TryParse(Default.BackgroundColor, out _))
             throw new InvalidDataException($"default.background_color inválida: \"{Default.BackgroundColor}\" (use \"#RRGGBB\").");
         if (Default.Shadow is < 0 or > 1) throw new InvalidDataException("default.shadow deve estar entre 0 e 1.");
+        if (AudioFadeIn is < 0 or > 10) throw new InvalidDataException("audio_fade_in deve estar entre 0 e 10 segundos.");
+        if (AudioFadeOut is < 0 or > 10) throw new InvalidDataException("audio_fade_out deve estar entre 0 e 10 segundos.");
         if (SecondsPerPhoto is <= 0) throw new InvalidDataException("seconds_per_photo deve ser maior que zero.");
         if (FadeSeconds is <= 0) throw new InvalidDataException("fade_seconds deve ser maior que zero.");
         if (Bpm <= 0) throw new InvalidDataException("bpm deve ser maior que zero.");

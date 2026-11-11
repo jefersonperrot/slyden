@@ -19,7 +19,6 @@ public sealed record RenderSummary(
 
 public static class SlideshowRenderer
 {
-    private const double AudioFadeOutSeconds = 1.5;
 
     public static RenderSummary Render(RenderRequest request, IProgress<RenderProgress>? progress = null,
                                        CancellationToken cancellation = default)
@@ -56,7 +55,8 @@ public static class SlideshowRenderer
         try
         {
             using (var encoder = new FfmpegEncoder(FfmpegLocator.Find(),
-                       EncoderArguments(width, height, fps, request.AudioPath, plan.AudioStart, total, partial)))
+                       EncoderArguments(width, height, fps, request.AudioPath, plan.AudioStart, total, partial,
+                                          cfg.AudioFadeIn, cfg.AudioFadeOut)))
             {
                 // Vários quadros são desenhados ao mesmo tempo (um por núcleo) e um único fio os entrega ao
                 // ffmpeg na ordem certa. Os quadros em andamento ocupam "espaços" (bitmaps) reutilizados.
@@ -175,7 +175,8 @@ public static class SlideshowRenderer
         SlideshowPlan.BoundariesOf(cuts, lengths);
 
     private static List<string> EncoderArguments(int width, int height, int fps, string? audio, double audioStart,
-                                                 double total, string output)
+                                                 double total, string output,
+                                                 double fadeInSeconds, double fadeOutSeconds)
     {
         var args = new List<string>
         {
@@ -184,10 +185,13 @@ public static class SlideshowRenderer
         };
         if (audio is not null)
         {
-            double fade = Math.Min(AudioFadeOutSeconds, total);
-            args.AddRange(["-ss", Inv(audioStart), "-t", Inv(total), "-i", audio,
-                           "-af", $"afade=t=out:st={Inv(total - fade)}:d={Inv(fade)}",
-                           "-c:a", "aac", "-b:a", "192k", "-shortest"]);
+            var filters = new List<string>();
+            double fadeIn = Math.Min(fadeInSeconds, total), fadeOut = Math.Min(fadeOutSeconds, total);
+            if (fadeIn > 0) filters.Add($"afade=t=in:st=0:d={Inv(fadeIn)}");
+            if (fadeOut > 0) filters.Add($"afade=t=out:st={Inv(total - fadeOut)}:d={Inv(fadeOut)}");
+            args.AddRange(["-ss", Inv(audioStart), "-t", Inv(total), "-i", audio]);
+            if (filters.Count > 0) args.AddRange(["-af", string.Join(',', filters)]);
+            args.AddRange(["-c:a", "aac", "-b:a", "192k", "-shortest"]);
         }
         else
         {

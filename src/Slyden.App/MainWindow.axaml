@@ -214,6 +214,23 @@
                     <ComboBoxItem>8 s por foto</ComboBoxItem><ComboBoxItem>10 s por foto</ComboBoxItem>
                   </ComboBox>
                 </Grid>
+                <TextBlock Classes="h" Text="MÚSICA" />
+                <ComboBox x:Name="MusicModeBox" HorizontalAlignment="Stretch" SelectedIndex="0">
+                  <ComboBoxItem>Ajustar os slides à música (usa a música toda)</ComboBoxItem>
+                  <ComboBoxItem>Cortar a música onde os slides acabam</ComboBoxItem>
+                </ComboBox>
+                <TextBlock Classes="hint" TextWrapping="Wrap"
+                           Text="No primeiro modo as fotos se espalham pela música inteira (com ritmo Automático). No segundo, o vídeo dura o que as fotos pedem e a música é cortada no fim." />
+                <Grid ColumnDefinitions="*,40,120">
+                  <TextBlock Classes="dim" VerticalAlignment="Center" Text="Entrada gradual (fade-in)" />
+                  <TextBlock Grid.Column="1" x:Name="FadeInValue" Classes="hint" VerticalAlignment="Center" HorizontalAlignment="Right" Text="0 s" />
+                  <Slider Grid.Column="2" x:Name="FadeInSlider" Minimum="0" Maximum="10" TickFrequency="0.5" IsSnapToTickEnabled="True" Value="0" />
+                </Grid>
+                <Grid ColumnDefinitions="*,40,120">
+                  <TextBlock Classes="dim" VerticalAlignment="Center" Text="Saída gradual (fade-out)" />
+                  <TextBlock Grid.Column="1" x:Name="FadeOutValue" Classes="hint" VerticalAlignment="Center" HorizontalAlignment="Right" Text="1,5 s" />
+                  <Slider Grid.Column="2" x:Name="FadeOutSlider" Minimum="0" Maximum="10" TickFrequency="0.5" IsSnapToTickEnabled="True" Value="1.5" />
+                </Grid>
               </StackPanel>
 
               <!-- aba Exportar -->

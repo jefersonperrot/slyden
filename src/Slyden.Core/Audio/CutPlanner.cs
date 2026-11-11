@@ -10,6 +10,22 @@ public static class CutPlanner
     private static readonly int[] AutoChoices = [8, 4, 2];
 
     /// <summary>
+    /// Espalha <paramref name="units"/> slides por TODA a música: cada troca cai numa batida e os slides ficam com
+    /// o mesmo número de batidas (±1). O primeiro começa no início da música e o último vai até o fim dela.
+    /// Devolve nulo se houver menos batidas do que slides (aí não dá para trocar a cada batida).
+    /// </summary>
+    public static CutPlan? PlanToFit(BeatAnalysis analysis, int units)
+    {
+        int count = analysis.BeatTimes.Length;
+        if (units < 1 || count < units + 1) return null;
+        var cuts = new double[units + 1];
+        for (int i = 1; i < units; i++)
+            cuts[i] = analysis.BeatTimes[(int)Math.Round((double)i * count / units)];
+        cuts[units] = Math.Max(analysis.DurationSeconds, cuts[Math.Max(0, units - 1)] + 0.5);
+        return new CutPlan(Math.Max(1, (int)Math.Round((double)count / units)), 0, cuts);
+    }
+
+    /// <summary>
     /// Decide em quais batidas trocar a foto. Com <paramref name="beatsPerPhoto"/> nulo ("auto") usa o
     /// ritmo mais calmo (8, 4 ou 2 batidas) que ainda comporta todas as fotos. A fase escolhida é a das
     /// batidas mais fortes, que costuma ser o início do compasso.
