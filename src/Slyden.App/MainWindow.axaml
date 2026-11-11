@@ -229,6 +229,7 @@
                     ToolTip.Tip="Incluir fotos (também dá para arrastar do Explorador)" />
           </StackPanel>
         </Grid>
+        <Grid>
         <ListBox x:Name="SlideList" Height="132" Background="Transparent" SelectionMode="Multiple,Toggle"
                  ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Disabled">
           <ListBox.ItemsPanel>
@@ -248,6 +249,10 @@
             </DataTemplate>
           </ListBox.ItemTemplate>
         </ListBox>
+        <Canvas IsHitTestVisible="False">
+          <Border x:Name="DropMarker" Width="3" Height="104" Background="#3B8BFF" CornerRadius="2" IsVisible="False" Canvas.Top="4" />
+        </Canvas>
+        </Grid>
       </StackPanel>
     </Border>
     <!-- novo projeto (cobre tudo) -->

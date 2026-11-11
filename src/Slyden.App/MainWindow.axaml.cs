@@ -1,8 +1,11 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
+using Avalonia.Threading;
+using Avalonia.VisualTree;
 using Avalonia.Interactivity;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform.Storage;
@@ -142,8 +145,12 @@ public partial class MainWindow : Window
         TabDefault.Click += (_, _) => ShowTab(2);
         TabExport.Click += (_, _) => ShowTab(3);
 
+        SlideList.AddHandler(PointerPressedEvent, OnTimelinePressed, RoutingStrategies.Tunnel, handledEventsToo: true);
+        SlideList.AddHandler(PointerMovedEvent, OnTimelineMoved, RoutingStrategies.Tunnel, handledEventsToo: true);
+        SlideList.AddHandler(PointerReleasedEvent, (_, _) => _pressedIndex = -1, RoutingStrategies.Tunnel, handledEventsToo: true);
         SlideList.SelectionChanged += (_, _) =>
         {
+            if (_suspendSelection) return;
             _selected = SlideList.SelectedIndex;
             UpdateSelectionButtons();
             LoadSlideControls();
@@ -488,19 +495,133 @@ public partial class MainWindow : Window
 
     private void MovePhoto(int direction)
     {
-        if (SelectedIndices().Count != 1) { SlideInfo.Text = "Selecione uma única foto para mover."; return; }
-        int from = _selected, to = _selected + direction;
-        if (from < 0 || to < 0 || to >= _cfg.Photos.Count) return;
-        var spec = _cfg.Photos[from];
-        _cfg.Photos.RemoveAt(from);
-        _cfg.Photos.Insert(to, spec);
-        _items.Move(from, to);
-        SlideList.SelectedIndex = to;
-        _selected = to;
+        var chosen = SelectedIndices();
+        if (chosen.Count == 0) return;
+        if (direction < 0 && chosen[0] == 0) return;
+        if (direction > 0 && chosen[^1] == _items.Count - 1) return;
+        ApplyReorder(chosen, direction < 0 ? chosen[0] - 1 : chosen[^1] + 2);
+    }
+
+    /// <summary>Leva as fotos nas posições <paramref name="indices"/> para antes de <paramref name="insertBefore"/> e mantém a seleção nelas.</summary>
+    private void ApplyReorder(IReadOnlyList<int> indices, int insertBefore)
+    {
+        _suspendSelection = true;
+        IReadOnlyList<int> now;
+        try
+        {
+            now = ListReorder.MoveBlock(_cfg.Photos, indices, insertBefore);
+            ListReorder.MoveBlock(_items, indices, insertBefore);
+            SlideList.SelectedItems?.Clear();
+            foreach (int i in now) SlideList.SelectedItems?.Add(_items[i]);
+        }
+        finally { _suspendSelection = false; }
+        if (now.Count == 0) return;
+
+        _selected = SlideList.SelectedIndex;
         MarkDirty();
+        UpdateSelectionButtons();
         LoadSlideControls();
         RefreshPreview();
+        SlideList.ScrollIntoView(_items[now[0]]);
+        SlideInfo.Text = now.Count == 1
+            ? $"Foto movida para a posição {now[0] + 1}."
+            : $"{now.Count} fotos movidas para a posição {now[0] + 1}.";
     }
+
+    // ---------- arrastar para reordenar ----------
+
+    private int _pressedIndex = -1;
+    private Point _pressPoint;
+    private PointerPressedEventArgs? _pressEvent;
+    private IReadOnlyList<int> _selectionAtPress = [];
+    private List<int>? _dragIndices;
+    private double _dragX;
+    private bool _suspendSelection;
+    private DispatcherTimer? _scrollTimer;
+
+    private void OnTimelinePressed(object? sender, PointerPressedEventArgs e)
+    {
+        _pressedIndex = -1;
+        if (!e.GetCurrentPoint(SlideList).Properties.IsLeftButtonPressed) return;
+        if ((e.Source as Visual)?.FindAncestorOfType<ListBoxItem>() is { } container)
+        {
+            _pressedIndex = SlideList.IndexFromContainer(container);
+            _pressEvent = e;
+            _pressPoint = e.GetPosition(SlideList);
+            _selectionAtPress = SelectedIndices(); // antes do clique mudar a seleção
+        }
+    }
+
+    private void OnTimelineMoved(object? sender, PointerEventArgs e)
+    {
+        if (_pressedIndex < 0 || _dragIndices is not null) return;
+        if (!e.GetCurrentPoint(SlideList).Properties.IsLeftButtonPressed) { _pressedIndex = -1; return; }
+        var p = e.GetPosition(SlideList);
+        if (Math.Abs(p.X - _pressPoint.X) < 8 && Math.Abs(p.Y - _pressPoint.Y) < 8) return;
+        if (_pressEvent is { } pressed) _ = BeginDragAsync(pressed, p.X);
+    }
+
+    private async Task BeginDragAsync(PointerPressedEventArgs pressed, double startX)
+    {
+        _dragIndices = _selectionAtPress.Contains(_pressedIndex) ? _selectionAtPress.ToList() : [_pressedIndex];
+        _pressedIndex = -1;
+        _dragX = startX;
+        _scrollTimer ??= new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(40) };
+        _scrollTimer.Tick -= AutoScroll;
+        _scrollTimer.Tick += AutoScroll;
+        _scrollTimer.Start();
+
+        var data = new DataTransfer();
+        data.Add(DataTransferItem.CreateText("slyden-slides"));
+        try { await DragDrop.DoDragDropAsync(pressed, data, DragDropEffects.Move); }
+        finally { EndDrag(); }
+    }
+
+    private void EndDrag()
+    {
+        _dragIndices = null;
+        _pressedIndex = -1;
+        DropMarker.IsVisible = false;
+        _scrollTimer?.Stop();
+    }
+
+    /// <summary>Rola a linha do tempo quando se arrasta perto da borda (projetos com centenas de fotos).</summary>
+    private void AutoScroll(object? sender, EventArgs e)
+    {
+        if (_dragIndices is null) return;
+        var viewer = SlideList.GetVisualDescendants().OfType<ScrollViewer>().FirstOrDefault();
+        if (viewer is null) return;
+        double width = SlideList.Bounds.Width;
+        double dx = _dragX < 60 ? -28 : _dragX > width - 60 ? 28 : 0;
+        if (dx == 0) return;
+        double max = Math.Max(0, viewer.Extent.Width - viewer.Viewport.Width);
+        viewer.Offset = new Vector(Math.Clamp(viewer.Offset.X + dx, 0, max), viewer.Offset.Y);
+    }
+
+    private int InsertIndexAt(Point p)
+    {
+        for (int i = 0; i < _items.Count; i++)
+        {
+            if (SlideList.ContainerFromIndex(i) is not { } c || c.TranslatePoint(new Point(0, 0), SlideList) is not { } topLeft) continue;
+            if (p.X < topLeft.X + c.Bounds.Width / 2) return i;
+        }
+        return _items.Count;
+    }
+
+    private void ShowDropMarker(int insertBefore)
+    {
+        double x = 0;
+        if (_items.Count > 0)
+        {
+            int at = Math.Min(insertBefore, _items.Count - 1);
+            if (SlideList.ContainerFromIndex(at) is { } c && c.TranslatePoint(new Point(0, 0), SlideList) is { } topLeft)
+                x = insertBefore < _items.Count ? topLeft.X - 3 : topLeft.X + c.Bounds.Width + 1;
+        }
+        Canvas.SetLeft(DropMarker, x);
+        DropMarker.IsVisible = true;
+    }
+
+    private bool OverTimeline(Point p) => new Rect(SlideList.Bounds.Size).Contains(p);
 
     private async Task AddPhotosAsync()
     {
@@ -563,12 +684,30 @@ public partial class MainWindow : Window
 
     private void OnDragOver(object? sender, DragEventArgs e)
     {
+        if (_dragIndices is not null) // reordenando dentro da linha do tempo
+        {
+            var p = e.GetPosition(SlideList);
+            _dragX = p.X;
+            bool over = OverTimeline(p);
+            e.DragEffects = over ? DragDropEffects.Move : DragDropEffects.None;
+            if (over) ShowDropMarker(InsertIndexAt(p)); else DropMarker.IsVisible = false;
+            e.Handled = true;
+            return;
+        }
         e.DragEffects = CanDrop && e.DataTransfer.Contains(DataFormat.File) ? DragDropEffects.Copy : DragDropEffects.None;
         e.Handled = true;
     }
 
     private void OnDrop(object? sender, DragEventArgs e)
     {
+        if (_dragIndices is not null)
+        {
+            var p = e.GetPosition(SlideList);
+            if (OverTimeline(p)) ApplyReorder(_dragIndices, InsertIndexAt(p));
+            DropMarker.IsVisible = false;
+            e.Handled = true;
+            return;
+        }
         if (!CanDrop) return;
         var paths = new List<string>();
         foreach (var item in e.DataTransfer.TryGetFiles() ?? [])

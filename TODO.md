@@ -76,7 +76,9 @@ Direção visual: tema escuro no estilo dos aplicativos Adobe. Maquete aprovada 
 - [x] Projetos em `%APPDATA%\Slyden\Projects\*.slyden` (`ProjectStore`); 133 testes
 - [x] Segunda revisão do usuário (11/11/2026): tela Novo projeto (nome, formato, resolução 720p/1080p/1440p/4K, pasta opcional), seleção múltipla (Ctrl/Shift/clique alterna) + Selecionar todas + remover várias, arrastar e soltar fotos/pastas do Explorador, fotos de qualquer pasta (caminho completo quando fora da pasta do projeto), tamanho da foto 30–100% (padrão + por foto) com fundo desfocado ou preto; 148 testes
 - [ ] Conferir a tela visualmente depois dessas mudanças
-- [ ] Mover várias fotos de uma vez (hoje ◀ ▶ só com uma selecionada); aplicar ajustes do painel a todas as selecionadas
+- [x] Reordenar: arrastar fotos (uma ou várias selecionadas) na linha do tempo com marcador azul e rolagem automática nas bordas; ◀ ▶ movem várias de uma vez; `ListReorder` testado (156 testes)
+- [ ] Aplicar ajustes do painel (efeito, tamanho etc.) a todas as fotos selecionadas
+- [ ] Números de posição nos cartões da linha do tempo; atalhos "Para o início/fim"
 - [ ] Resolução do vídeo no app depois de criado (hoje só na criação do projeto)
 - [ ] Efeito de fundo mais próximo do CapCut: ajustar intensidade do desfoque
 - [ ] Renomear projeto; botão para escolher a foto de capa e levá-la ao início
