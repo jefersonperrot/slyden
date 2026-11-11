@@ -24,7 +24,8 @@ Atualizar este arquivo a cada etapa concluída ou nova ideia.
 - [x] Configuração em JSON (`SlideshowConfig`) compatível com o arquivo do protótipo, com validação e mensagens de erro claras
 - [x] CLI: `slidebeat render <fotos> <saida.mp4> [--audio] [--config] [--format]`; grava em arquivo `.partial.mp4` e só renomeia no fim (cancelar não deixa vídeo pela metade)
 - [x] Paridade com o protótipo: mesmos quadros (PSNR 41–47 dB) com a mesma configuração, sem música
-- [x] 59 testes automatizados (config, geometria, linha do tempo, desenho em pixels, EXIF, batida)
+- [x] 67 testes automatizados (config, geometria, linha do tempo, desenho em pixels, EXIF, batida)
+- [x] Corrigido "tranco" nos movimentos laterais/verticais: a foto ficava parada e arrancava de repente porque o movimento pedia mais do que o zoom permitia (a borda cortava). Agora o movimento usa exatamente a margem livre da foto. O protótipo Python ainda tem esse defeito (não será corrigido; serve só de referência)
 
 ## Fazendo
 - [ ] (nada em andamento)

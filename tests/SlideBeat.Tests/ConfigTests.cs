@@ -86,10 +86,11 @@ public class ConfigTests
         Assert.Equal(EffectKind.ZoomIn, slides[0].Effect);   // 1ª do ciclo
         Assert.Equal(TransitionKind.Fade, slides[0].Transition);
         Assert.Equal(EffectKind.ZoomIn, slides[1].Effect);   // exceção
-        Assert.Equal(1.25, slides[1].Motion.Zoom1, 6);       // intensidade 0,25
+        Assert.Equal(1.25, SlideResolver.MotionOf(slides[1], 2000, 1500, 16.0 / 9).Zoom1, 6); // intensidade 0,25
         Assert.Equal(TransitionKind.Cut, slides[1].Transition);
         Assert.Equal(EffectKind.None, slides[2].Effect);
-        Assert.Equal(new Motion(1, 1.5, .2, .3, .8, .7), slides[3].Motion); // zoom/centro explícitos
+        Assert.Equal(new Motion(1, 1.5, .2, .3, .8, .7),
+                     SlideResolver.MotionOf(slides[3], 2000, 1500, 16.0 / 9)); // zoom/centro explícitos
     }
 
     [Fact]

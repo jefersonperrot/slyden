@@ -75,9 +75,9 @@ public static class SlideshowRenderer
                 SlideRenderer Get(int i)
                 {
                     if (!loaded.TryGetValue(i, out var r))
-                        loaded[i] = r = new SlideRenderer(
+                        loaded[i] = r = SlideRenderer.Create(
                             ImageLoader.Load(Path.Combine(request.PhotosFolder, slides[i].File)),
-                            slides[i].Motion, width, height);
+                            slides[i], width, height);
                     return r;
                 }
 

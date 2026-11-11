@@ -15,6 +15,14 @@ internal sealed class SlideRenderer : IDisposable
     private readonly SlideLayout _layout;
     private readonly Motion _motion;
 
+    /// <summary>Cria o desenhista do slide calculando o movimento para o tamanho real da foto.</summary>
+    public static SlideRenderer Create(SKBitmap source, ResolvedSlide slide, int frameWidth, int frameHeight)
+    {
+        var layout = SlideGeometry.Layout(source.Width, source.Height, frameWidth, frameHeight);
+        var motion = SlideResolver.MotionOf(slide, source.Width, source.Height, (double)layout.Width / layout.Height);
+        return new SlideRenderer(source, motion, frameWidth, frameHeight);
+    }
+
     public SlideRenderer(SKBitmap source, Motion motion, int frameWidth, int frameHeight)
     {
         _source = source;
