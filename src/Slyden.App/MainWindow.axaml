@@ -17,6 +17,7 @@
                    VerticalAlignment="Center" Text="Nenhum projeto aberto" />
         <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
           <TextBlock x:Name="SaveState" Classes="hint" VerticalAlignment="Center" />
+          <Button x:Name="SettingsButton" Classes="btn" Content="⚙" FontSize="15" ToolTip.Tip="Configurações do programa" />
           <Button x:Name="UndoButton" Classes="btn" Content="↶ Desfazer" IsEnabled="False" ToolTip.Tip="Desfazer (Ctrl+Z)" />
           <Button x:Name="RedoButton" Classes="btn" Content="↷ Refazer" IsEnabled="False" ToolTip.Tip="Refazer (Ctrl+Y)" />
           <Button x:Name="SaveButton" Classes="btn" Content="Salvar" />
@@ -251,14 +252,6 @@
                 </Grid>
                 <TextBlock Classes="hint" TextWrapping="Wrap"
                            Text="Abaixo de 100% a foto encolhe e sobra borda, preenchida pela mesma foto desfocada ou por preto. Vale para todas as fotos, exceto as que você ajustar na aba Slide." />
-                <TextBlock Classes="h" Text="CONFIGURAÇÃO PADRÃO" />
-                <TextBlock Classes="hint" TextWrapping="Wrap"
-                           Text="Guarde os ajustes desta aba (efeitos, fundo, sombra, música, formato e resolução) como ponto de partida de todo projeto novo." />
-                <StackPanel Orientation="Horizontal" Spacing="8">
-                  <Button x:Name="SaveDefaultsButton" Classes="btn" Content="Salvar como padrão" />
-                  <Button x:Name="ResetDefaultsButton" Classes="btn" Content="Voltar ao padrão de fábrica" />
-                </StackPanel>
-                <TextBlock x:Name="DefaultsStatus" Classes="hint" TextWrapping="Wrap" />
                 <TextBlock Classes="h" Text="RITMO" />
                 <Grid ColumnDefinitions="*,140">
                   <TextBlock Classes="dim" VerticalAlignment="Center" Text="Com música" />
@@ -434,6 +427,124 @@
                      Text="Nenhum projeto ainda. Clique em Novo projeto." />
         </Grid>
       </Grid>
+    </Border>
+
+    <!-- configurações do programa (valem para todos os projetos; cobrem tudo) -->
+    <Border x:Name="SettingsView" Grid.Row="1" Grid.RowSpan="2" Background="#161618" IsVisible="False">
+      <ScrollViewer>
+        <StackPanel MaxWidth="640" Spacing="14" Margin="40,28,40,40" HorizontalAlignment="Center">
+          <Grid ColumnDefinitions="*,Auto">
+            <StackPanel Spacing="4">
+              <TextBlock Text="Configurações" FontSize="22" FontWeight="Medium" />
+              <TextBlock Classes="hint" TextWrapping="Wrap"
+                         Text="Valem para o programa, fora dos projetos. As mudanças são salvas na hora e afetam só projetos e textos NOVOS." />
+            </StackPanel>
+            <Button Grid.Column="1" x:Name="SettingsCloseButton" Classes="btn primary" Content="Voltar" VerticalAlignment="Center" />
+          </Grid>
+
+          <TextBlock Classes="h" Margin="0,10,0,0" Text="NOVOS PROJETOS: VÍDEO" />
+          <TextBlock Classes="dim" Text="Formato" />
+          <WrapPanel x:Name="StFormatChips" />
+          <TextBlock Classes="dim" Text="Resolução" />
+          <WrapPanel x:Name="StResolutionChips" />
+
+          <TextBlock Classes="h" Margin="0,10,0,0" Text="NOVOS PROJETOS: MOVIMENTO" />
+          <TextBlock Classes="dim" Text="Efeitos (vários = alternam)" />
+          <WrapPanel x:Name="StEffectChips" />
+          <Grid ColumnDefinitions="*,50,180">
+            <TextBlock Classes="dim" VerticalAlignment="Center" Text="Intensidade" />
+            <TextBlock Grid.Column="1" x:Name="StIntensityValue" Classes="hint" VerticalAlignment="Center" HorizontalAlignment="Right" />
+            <Slider Grid.Column="2" x:Name="StIntensity" Minimum="1" Maximum="30" />
+          </Grid>
+          <TextBlock Classes="dim" Text="Transição" />
+          <WrapPanel x:Name="StTransitionChips" />
+
+          <TextBlock Classes="h" Margin="0,10,0,0" Text="NOVOS PROJETOS: FOTO E FUNDO" />
+          <Grid ColumnDefinitions="*,50,180">
+            <TextBlock Classes="dim" VerticalAlignment="Center" Text="Tamanho da foto" />
+            <TextBlock Grid.Column="1" x:Name="StScaleValue" Classes="hint" VerticalAlignment="Center" HorizontalAlignment="Right" />
+            <Slider Grid.Column="2" x:Name="StScale" Minimum="30" Maximum="100" />
+          </Grid>
+          <WrapPanel x:Name="StBackgroundChips" />
+          <TextBlock Classes="dim" Text="Cor do fundo (quando o fundo é Cor)" />
+          <WrapPanel x:Name="StSwatches" />
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Border x:Name="StColorPreview" Width="24" Height="24" CornerRadius="4" BorderBrush="#55555B" BorderThickness="1" />
+            <TextBox x:Name="StColorBox" Width="110" MaxLength="7" PlaceholderText="#RRGGBB" />
+          </StackPanel>
+          <Grid ColumnDefinitions="*,50,180">
+            <TextBlock Classes="dim" VerticalAlignment="Center" Text="Sombra da foto" />
+            <TextBlock Grid.Column="1" x:Name="StShadowValue" Classes="hint" VerticalAlignment="Center" HorizontalAlignment="Right" />
+            <Slider Grid.Column="2" x:Name="StShadow" Minimum="0" Maximum="100" />
+          </Grid>
+
+          <TextBlock Classes="h" Margin="0,10,0,0" Text="NOVOS PROJETOS: MÚSICA" />
+          <ComboBox x:Name="StMusicMode" HorizontalAlignment="Stretch">
+            <ComboBoxItem>Ajustar os slides à música (usa a música toda)</ComboBoxItem>
+            <ComboBoxItem>Cortar a música onde os slides acabam</ComboBoxItem>
+          </ComboBox>
+          <Grid ColumnDefinitions="*,50,180">
+            <TextBlock Classes="dim" VerticalAlignment="Center" Text="Entrada gradual (fade-in)" />
+            <TextBlock Grid.Column="1" x:Name="StFadeInValue" Classes="hint" VerticalAlignment="Center" HorizontalAlignment="Right" />
+            <Slider Grid.Column="2" x:Name="StFadeIn" Minimum="0" Maximum="10" TickFrequency="0.5" IsSnapToTickEnabled="True" />
+          </Grid>
+          <Grid ColumnDefinitions="*,50,180">
+            <TextBlock Classes="dim" VerticalAlignment="Center" Text="Saída gradual (fade-out)" />
+            <TextBlock Grid.Column="1" x:Name="StFadeOutValue" Classes="hint" VerticalAlignment="Center" HorizontalAlignment="Right" />
+            <Slider Grid.Column="2" x:Name="StFadeOut" Minimum="0" Maximum="10" TickFrequency="0.5" IsSnapToTickEnabled="True" />
+          </Grid>
+
+          <TextBlock Classes="h" Margin="0,10,0,0" Text="TEXTOS NOVOS (CAPA E LEGENDAS)" />
+          <Grid ColumnDefinitions="*,260">
+            <TextBlock Classes="dim" VerticalAlignment="Center" Text="Fonte padrão" />
+            <ComboBox Grid.Column="1" x:Name="StTextFont" HorizontalAlignment="Stretch" MaxDropDownHeight="360">
+              <ComboBox.ItemTemplate>
+                <DataTemplate>
+                  <TextBlock Text="{Binding}" FontFamily="{Binding}" FontSize="15" TextTrimming="CharacterEllipsis" />
+                </DataTemplate>
+              </ComboBox.ItemTemplate>
+            </ComboBox>
+          </Grid>
+          <Grid ColumnDefinitions="*,50,180">
+            <TextBlock Classes="dim" VerticalAlignment="Center" Text="Tamanho" />
+            <TextBlock Grid.Column="1" x:Name="StTextSizeValue" Classes="hint" VerticalAlignment="Center" HorizontalAlignment="Right" />
+            <Slider Grid.Column="2" x:Name="StTextSize" Minimum="2" Maximum="20" />
+          </Grid>
+          <Grid ColumnDefinitions="*,260">
+            <TextBlock Classes="dim" VerticalAlignment="Center" Text="Cor do texto" />
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+              <Border x:Name="StTextColorPreview" Width="24" Height="24" CornerRadius="4" BorderBrush="#55555B" BorderThickness="1" />
+              <TextBox x:Name="StTextColor" Width="110" MaxLength="7" PlaceholderText="#RRGGBB" />
+            </StackPanel>
+          </Grid>
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <ToggleButton x:Name="StTextBold" Classes="chip" Content="Negrito" />
+            <ToggleButton x:Name="StTextItalic" Classes="chip" Content="Itálico" />
+            <ToggleButton x:Name="StTextShadow" Classes="chip" Content="Sombra" />
+          </StackPanel>
+          <Grid ColumnDefinitions="*,260">
+            <TextBlock Classes="dim" VerticalAlignment="Center" Text="Alinhamento" />
+            <ComboBox Grid.Column="1" x:Name="StTextAlign" HorizontalAlignment="Stretch">
+              <ComboBoxItem>Esquerda</ComboBoxItem><ComboBoxItem>Centro</ComboBoxItem><ComboBoxItem>Direita</ComboBoxItem>
+            </ComboBox>
+          </Grid>
+          <Grid ColumnDefinitions="*,120">
+            <TextBlock Classes="dim" VerticalAlignment="Center" Text="Fade de entrada (s)" />
+            <NumericUpDown Grid.Column="1" x:Name="StTextFadeIn" Minimum="0" Maximum="30" Increment="0.1" FormatString="0.0" />
+          </Grid>
+          <Grid ColumnDefinitions="*,120">
+            <TextBlock Classes="dim" VerticalAlignment="Center" Text="Fade de saída (s)" />
+            <NumericUpDown Grid.Column="1" x:Name="StTextFadeOut" Minimum="0" Maximum="30" Increment="0.1" FormatString="0.0" />
+          </Grid>
+
+          <TextBlock Classes="h" Margin="0,10,0,0" Text="PADRÕES" />
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Button x:Name="CopyFromProjectButton" Classes="btn" Content="Copiar ajustes do projeto aberto" />
+            <Button x:Name="ResetDefaultsButton" Classes="btn" Content="Voltar ao padrão de fábrica" />
+          </StackPanel>
+          <TextBlock x:Name="DefaultsStatus" Classes="hint" TextWrapping="Wrap" />
+        </StackPanel>
+      </ScrollViewer>
     </Border>
   </Grid>
 </Window>

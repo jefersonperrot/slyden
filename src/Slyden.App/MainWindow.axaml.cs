@@ -208,7 +208,7 @@ public partial class MainWindow : Window
         AddHandler(KeyDownEvent, (_, e) =>
         {
             if (e.Key != Key.Space || e.KeyModifiers != KeyModifiers.None) return;
-            if (!PlayButton.IsEffectivelyVisible || !PlayButton.IsEnabled) return;
+            if (!EditorActive || !PlayButton.IsEnabled) return;
             if (FocusManager?.GetFocusedElement() is TextBox) return;
             e.Handled = true;
             _ = TogglePlayAsync();

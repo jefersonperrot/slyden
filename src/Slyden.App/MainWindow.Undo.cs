@@ -55,7 +55,7 @@ public partial class MainWindow
         RedoButton.IsEnabled = _redo.Count > 0;
     }
 
-    private bool EditorActive => _project is not null && !HomeView.IsVisible && !NewProjectView.IsVisible;
+    private bool EditorActive => _project is not null && !HomeView.IsVisible && !NewProjectView.IsVisible && !SettingsView.IsVisible;
 
     private void Undo() => Step(_undo, _redo);
 

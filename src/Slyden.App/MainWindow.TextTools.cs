@@ -106,12 +106,8 @@ public partial class MainWindow
             _userDefaults.CaptureTextStyle(text);
             SaveUserDefaults(TextStyleStatus, "Pronto: os novos textos vão usar a fonte, o tamanho, a cor e a animação deste.");
         };
-        SaveDefaultsButton.Click += (_, _) =>
-        {
-            _userDefaults.CaptureFrom(_cfg);
-            SaveUserDefaults(DefaultsStatus, "Salvo: todo projeto novo vai começar com estes ajustes. Os projetos que já existem não mudam.");
-        };
         ResetDefaultsButton.Click += (_, _) => ResetDefaults();
+        InitSettings();
     }
 
     private void SaveUserDefaults(Avalonia.Controls.TextBlock status, string success)
@@ -145,7 +141,8 @@ public partial class MainWindow
         {
             _defaultsStore.Reset();
             _userDefaults = new UserDefaults();
-            DefaultsStatus.Text = "Padrão de fábrica restaurado para os próximos projetos e textos novos. Este projeto não mudou.";
+            LoadSettings();
+            DefaultsStatus.Text = "Padrão de fábrica restaurado para os próximos projetos e textos novos. Os projetos existentes não mudaram.";
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
