@@ -1,4 +1,4 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -48,10 +48,11 @@ public partial class MainWindow
         ResetOnDoubleClick(FadeOutSlider, 1.5);
     }
 
-    private readonly UserDefaultsStore _defaultsStore = new(UserDefaultsStore.DefaultPath);
-    private UserDefaults _userDefaults = new();
-    private bool _confirmingResetDefaults;
-    private Avalonia.Threading.DispatcherTimer? _resetDefaultsTimer;
+    private readonly PresetStore _presetStore = new(PresetStore.DefaultPath, PresetStore.LegacyDefaultPath);
+    private PresetLibrary _library = new();
+
+    /// <summary>Preset do projeto aberto (de onde vêm os textos novos); sem projeto, o padrão.</summary>
+    private Preset ActivePreset => _library.For(_project?.PresetId);
 
     private static double Num(NumericUpDown box) => box.Value is { } v ? (double)v : 0;
 
@@ -93,7 +94,7 @@ public partial class MainWindow
 
     private void InitDefaults()
     {
-        _userDefaults = _defaultsStore.Load();
+        _library = _presetStore.Load();
 
         PreviewImage.PropertyChanged += (_, e) =>
         {
@@ -103,60 +104,24 @@ public partial class MainWindow
         TextStyleDefaultButton.Click += (_, _) =>
         {
             if (CurrentText is not { } text) return;
-            _userDefaults.CaptureTextStyle(text);
-            SaveUserDefaults(TextStyleStatus, "Pronto: os novos textos vão usar a fonte, o tamanho, a cor e a animação deste.");
+            ActivePreset.CaptureTextStyle(text);
+            SavePresets(TextStyleStatus, $"Pronto: os novos textos do preset \"{ActivePreset.Name}\" vão usar a fonte, o tamanho, a cor e a animação deste.");
         };
-        ResetDefaultsButton.Click += (_, _) => ResetDefaults();
         InitSettings();
     }
 
-    private void SaveUserDefaults(Avalonia.Controls.TextBlock status, string success)
+    private void SavePresets(Avalonia.Controls.TextBlock status, string success)
     {
         try
         {
-            _defaultsStore.Save(_userDefaults);
+            _presetStore.Save(_library);
             status.Text = success;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            status.Text = "Não consegui salvar o padrão: " + ex.Message;
+            status.Text = "Não consegui salvar os presets: " + ex.Message;
         }
     }
-
-    /// <summary>Dois cliques (o segundo em até 4 s) para voltar ao padrão de fábrica.</summary>
-    private void ResetDefaults()
-    {
-        if (!_confirmingResetDefaults)
-        {
-            _confirmingResetDefaults = true;
-            ResetDefaultsButton.Content = "Confirmar?";
-            _resetDefaultsTimer ??= new Avalonia.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(4) };
-            _resetDefaultsTimer.Tick -= OnResetDefaultsTimeout;
-            _resetDefaultsTimer.Tick += OnResetDefaultsTimeout;
-            _resetDefaultsTimer.Start();
-            return;
-        }
-        OnResetDefaultsTimeout(null, EventArgs.Empty);
-        try
-        {
-            _defaultsStore.Reset();
-            _userDefaults = new UserDefaults();
-            LoadSettings();
-            DefaultsStatus.Text = "Padrão de fábrica restaurado para os próximos projetos e textos novos. Os projetos existentes não mudaram.";
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-        {
-            DefaultsStatus.Text = "Não consegui restaurar: " + ex.Message;
-        }
-    }
-
-    private void OnResetDefaultsTimeout(object? sender, EventArgs e)
-    {
-        _confirmingResetDefaults = false;
-        _resetDefaultsTimer?.Stop();
-        ResetDefaultsButton.Content = "Voltar ao padrão de fábrica";
-    }
-
     private static void ResetOnDoubleClick(Slider slider, double value) =>
         slider.AddHandler(DoubleTappedEvent, (_, _) => slider.Value = value, RoutingStrategies.Bubble, handledEventsToo: true);
 

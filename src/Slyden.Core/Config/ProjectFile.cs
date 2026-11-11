@@ -9,6 +9,8 @@ public sealed class ProjectFile
     public string Name { get; set; } = "Novo projeto";
     public string PhotosFolder { get; set; } = "";
     public string? AudioPath { get; set; }
+    /// <summary>Preset com que o projeto foi criado (de onde vêm, por exemplo, os textos novos); vazio = o padrão.</summary>
+    public string? PresetId { get; set; }
     public DateTime Modified { get; set; } = DateTime.UtcNow;
     public SlideshowConfig Config { get; set; } = new();
 

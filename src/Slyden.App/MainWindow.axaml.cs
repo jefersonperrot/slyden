@@ -322,13 +322,21 @@ public partial class MainWindow : Window
         NewFolderText.Text = "Nenhuma pasta escolhida";
         bool was = _loading;
         _loading = true;
-        SetChips(NewFormatChips, [Math.Max(0, Array.IndexOf(FormatValues, _userDefaults.Format))]);
-        SetChips(NewResolutionChips, [Math.Max(0, Array.IndexOf(VideoFormat.Resolutions, _userDefaults.Resolution))]);
+        NewPresetBox.ItemsSource = _library.Presets.Select(p => p.Id == _library.DefaultId ? p.Name + "  ★" : p.Name).ToList();
+        NewPresetBox.SelectedIndex = Math.Max(0, _library.Presets.IndexOf(_library.Default));
+        ApplyNewPresetChips();
         _loading = was;
         UpdateNewSizeInfo();
         HomeView.IsVisible = false;
         NewProjectView.IsVisible = true;
         NewName.Focus();
+    }
+
+    private void ApplyNewPresetChips()
+    {
+        var p = _library.Presets[Math.Clamp(NewPresetBox.SelectedIndex, 0, _library.Presets.Count - 1)];
+        SetChips(NewFormatChips, [Math.Max(0, Array.IndexOf(FormatValues, p.Format))]);
+        SetChips(NewResolutionChips, [Math.Max(0, Array.IndexOf(VideoFormat.Resolutions, p.Resolution))]);
     }
 
     private void UpdateNewSizeInfo()
@@ -361,11 +369,12 @@ public partial class MainWindow : Window
             NewMessage.Text = "Essa pasta não tem fotos .jpg. Escolha outra ou crie o projeto sem pasta.";
             return;
         }
-        _userDefaults.ApplyTo(config); // efeitos, fundo, música... do padrão do usuário
+        var preset = _library.Presets[Math.Clamp(NewPresetBox.SelectedIndex, 0, _library.Presets.Count - 1)];
+        preset.ApplyTo(config); // efeitos, fundo, música... do preset escolhido
         config.Format = FormatValues[Checked(NewFormatChips).FirstOrDefault()];
         config.Resolution = VideoFormat.Resolutions[Checked(NewResolutionChips).FirstOrDefault(1)];
 
-        var project = new ProjectFile { Name = name, PhotosFolder = _newFolder, Config = config };
+        var project = new ProjectFile { Name = name, PhotosFolder = _newFolder, Config = config, PresetId = preset.Id };
         try
         {
             if (_newProjectFolder.Length > 0)
@@ -1009,7 +1018,7 @@ public partial class MainWindow : Window
         if (spec.Texts is null or { Count: 0 })
         {
             // se o usuário definiu uma fonte padrão, a capa inteira usa ela; senão, uma combinação de exemplo
-            string? own = _userDefaults.TextStyle?.Font;
+            string? own = ActivePreset.TextStyle?.Font;
             // os textos entram em sequência, um depois do outro, com fade suave
             spec.Texts =
             [
@@ -1088,7 +1097,7 @@ public partial class MainWindow : Window
     private void AddText()
     {
         if (Current is not { } spec) return;
-        (spec.Texts ??= []).Add(_userDefaults.NewText("Novo texto"));
+        (spec.Texts ??= []).Add(ActivePreset.NewText("Novo texto"));
         _items[_selected].RefreshTags();
         MarkDirty();
         ReloadTexts(select: spec.Texts.Count - 1);

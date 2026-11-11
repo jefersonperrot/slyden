@@ -1,4 +1,4 @@
-﻿using Slyden.Core.Config;
+using Slyden.Core.Config;
 using Slyden.Core.Render;
 
 namespace Slyden.Tests;
@@ -88,34 +88,70 @@ public class TextAnimationAndDefaultsTests : IDisposable
     }
 
     [Fact]
-    public void User_defaults_are_saved_loaded_and_applied_to_new_projects()
+    public void Presets_are_saved_loaded_and_applied_to_new_projects()
     {
-        var store = new UserDefaultsStore(Path.Combine(_dir, "defaults.json"));
+        var store = new PresetStore(Path.Combine(_dir, "presets.json"));
         Assert.False(store.Exists);
-        Assert.Equal("16:9", store.Load().Format); // sem arquivo: padrão de fábrica
+        var library = store.Load();
+        Assert.Equal("16:9", library.Default.Format); // sem arquivo: só o de fábrica
 
         var source = new SlideshowConfig { Format = "9:16", Resolution = 2160, MusicMode = MusicMode.FitSlides, AudioFadeIn = 2 };
         source.Default.Scale = 0.8;
         source.Default.BackgroundColor = "#112233";
-        var defaults = store.Load();
-        defaults.CaptureFrom(source);
-        store.Save(defaults);
+        var wedding = library.Add("Casamento");
+        wedding.CaptureFrom(source);
+        library.DefaultId = wedding.Id;
+        store.Save(library);
 
+        var loaded = store.Load();
+        Assert.Equal(2, loaded.Presets.Count);
         var fresh = new SlideshowConfig();
-        store.Load().ApplyTo(fresh);
+        loaded.Default.ApplyTo(fresh);
         Assert.Equal(("9:16", 2160, MusicMode.FitSlides, 2.0), (fresh.Format, fresh.Resolution, fresh.MusicMode, fresh.AudioFadeIn));
         Assert.Equal(0.8, fresh.Default.Scale);
         Assert.Equal("#112233", fresh.Default.BackgroundColor);
 
-        store.Reset();
-        Assert.False(store.Exists);
-        Assert.Equal(1.0, store.Load().Default.Scale);
+        loaded.Default.ResetToFactory();
+        Assert.Equal(1.0, loaded.Default.Default.Scale);
+        Assert.Equal("Casamento", loaded.Default.Name);
+    }
+
+    [Fact]
+    public void Library_manages_names_default_and_deletion()
+    {
+        var library = new PresetLibrary();
+        library.Normalize();
+        var first = library.Presets[0];
+        var clients = library.Add("Clientes");
+        Assert.Equal("clientes (2)", library.Add("clientes").Name);
+        Assert.False(library.Rename(clients, "Padrão")); // nome já usado
+        Assert.True(library.Rename(clients, "Clientes VIP"));
+        Assert.Same(clients, library.Find(clients.Id)); // o Id sobrevive ao renomear
+
+        library.DefaultId = clients.Id;
+        Assert.True(library.Delete(clients));
+        Assert.Equal(first.Id, library.DefaultId); // o padrão apagado passa ao primeiro
+        Assert.Same(library.Default, library.For("apagado")); // projeto cujo preset sumiu usa o padrão
+
+        library.Delete(library.Presets[^1]);
+        Assert.False(library.Delete(library.Presets[0])); // o último não se apaga
+    }
+
+    [Fact]
+    public void Old_single_defaults_file_becomes_the_first_preset()
+    {
+        Directory.CreateDirectory(_dir);
+        string legacy = Path.Combine(_dir, "defaults.json");
+        File.WriteAllText(legacy, "{ \"format\": \"1:1\", \"resolution\": 720 }");
+        var library = new PresetStore(Path.Combine(_dir, "presets.json"), legacy).Load();
+        Assert.Single(library.Presets);
+        Assert.Equal(("Padrão", "1:1", 720), (library.Default.Name, library.Default.Format, library.Default.Resolution));
     }
 
     [Fact]
     public void Default_text_style_is_used_for_new_texts_without_copying_content_or_position()
     {
-        var defaults = new UserDefaults();
+        var defaults = new Preset();
         Assert.Equal("Georgia", defaults.NewText("a").Font); // de fábrica
 
         defaults.CaptureTextStyle(new TextBlock
@@ -128,12 +164,11 @@ public class TextAnimationAndDefaultsTests : IDisposable
     }
 
     [Fact]
-    public void A_corrupted_defaults_file_falls_back_to_factory_settings()
+    public void A_corrupted_presets_file_falls_back_to_factory_settings()
     {
         Directory.CreateDirectory(_dir);
-        string path = Path.Combine(_dir, "defaults.json");
+        string path = Path.Combine(_dir, "presets.json");
         File.WriteAllText(path, "{ isto não é json");
-        Assert.Equal(1080, new UserDefaultsStore(path).Load().Resolution);
+        Assert.Equal(1080, new PresetStore(path).Load().Default.Resolution);
     }
 }
-

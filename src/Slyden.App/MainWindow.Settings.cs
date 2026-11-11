@@ -9,6 +9,8 @@ namespace Slyden.App;
 public partial class MainWindow
 {
     private bool _stLoading;
+    private Preset _settingsPreset = new();
+    private readonly Dictionary<Button, (string Label, Avalonia.Threading.DispatcherTimer Timer)> _confirming = [];
 
     private static readonly string[] SwatchColors =
         ["#FFFFFF", "#F3EBDD", "#C9C9CE", "#6B6B73", "#1B2A41", "#7A1F2B", "#D9A5A5", "#3E5C4B"];
@@ -72,12 +74,121 @@ public partial class MainWindow
         CopyFromProjectButton.Click += (_, _) =>
         {
             if (!EditorActive) return;
-            _userDefaults.CaptureFrom(_cfg);
-            SaveUserDefaults(DefaultsStatus, "Copiado: os ajustes do projeto aberto viraram o padrão dos próximos projetos.");
+            _settingsPreset.CaptureFrom(_cfg);
+            SavePresets(DefaultsStatus, $"Copiado: os ajustes do projeto aberto foram para o preset \"{_settingsPreset.Name}\".");
             LoadSettings();
         };
+        InitPresetManagement();
     }
 
+    private void InitPresetManagement()
+    {
+        StPresetBox.SelectionChanged += (_, _) =>
+        {
+            if (_stLoading || StPresetBox.SelectedIndex < 0 || StPresetBox.SelectedIndex >= _library.Presets.Count) return;
+            _settingsPreset = _library.Presets[StPresetBox.SelectedIndex];
+            DefaultsStatus.Text = "";
+            LoadSettings();
+            UpdatePresetControls();
+        };
+        NewPresetBox.SelectionChanged += (_, _) =>
+        {
+            if (_loading || NewPresetBox.SelectedIndex < 0 || !NewProjectView.IsVisible) return;
+            ApplyNewPresetChips();
+            UpdateNewSizeInfo();
+        };
+        PresetNewButton.Click += (_, _) => AddPreset(_library.Add("Novo preset"), "Preset criado com os ajustes de fábrica.");
+        PresetDuplicateButton.Click += (_, _) =>
+            AddPreset(_library.Add(_settingsPreset.Name + " (cópia)", _settingsPreset), "Preset duplicado.");
+        PresetFromProjectButton.Click += (_, _) =>
+        {
+            if (!EditorActive) return;
+            var preset = _library.Add(_project!.Name);
+            preset.CaptureFrom(_cfg);
+            AddPreset(preset, "Preset criado a partir do projeto aberto.");
+        };
+        PresetDeleteButton.Click += (_, _) => Confirm(PresetDeleteButton, "Clique de novo para excluir", () =>
+        {
+            if (!_library.Delete(_settingsPreset)) return;
+            _settingsPreset = _library.Default;
+            RefreshPresetList();
+            LoadSettings();
+            SavePresets(DefaultsStatus, "Preset excluído (os projetos que o usavam passam a usar o padrão).");
+        });
+        PresetRenameButton.Click += (_, _) =>
+        {
+            if (!_library.Rename(_settingsPreset, StPresetName.Text ?? ""))
+            {
+                DefaultsStatus.Text = "Nome vazio ou já usado por outro preset.";
+                return;
+            }
+            RefreshPresetList();
+            SavePresets(DefaultsStatus, "Renomeado.");
+        };
+        PresetDefaultButton.Click += (_, _) =>
+        {
+            _library.DefaultId = _settingsPreset.Id;
+            RefreshPresetList();
+            SavePresets(DefaultsStatus, $"\"{_settingsPreset.Name}\" é o padrão para projetos novos.");
+        };
+        ResetDefaultsButton.Click += (_, _) => Confirm(ResetDefaultsButton, "Clique de novo para restaurar", () =>
+        {
+            _settingsPreset.ResetToFactory();
+            SavePresets(DefaultsStatus, "Preset restaurado ao de fábrica.");
+            LoadSettings();
+        });
+    }
+
+    private void AddPreset(Preset preset, string message)
+    {
+        _settingsPreset = preset;
+        RefreshPresetList();
+        LoadSettings();
+        SavePresets(DefaultsStatus, message);
+    }
+
+    /// <summary>Recarrega a lista de presets (★ marca o padrão) e seleciona <see cref="_settingsPreset"/>.</summary>
+    private void RefreshPresetList()
+    {
+        bool was = _stLoading;
+        _stLoading = true;
+        try
+        {
+            StPresetBox.ItemsSource = _library.Presets.Select(p => p.Id == _library.DefaultId ? p.Name + "  ★" : p.Name).ToList();
+            StPresetBox.SelectedIndex = Math.Max(0, _library.Presets.IndexOf(_settingsPreset));
+            StPresetName.Text = _settingsPreset.Name;
+        }
+        finally { _stLoading = was; }
+        UpdatePresetControls();
+    }
+
+    private void UpdatePresetControls()
+    {
+        StPresetName.Text = _settingsPreset.Name;
+        PresetDeleteButton.IsEnabled = _library.Presets.Count > 1;
+        PresetDefaultButton.IsChecked = _settingsPreset.Id == _library.DefaultId;
+    }
+
+    /// <summary>Botão de duas etapas: o primeiro clique pede confirmação, o segundo (em 4 s) executa.</summary>
+    private void Confirm(Button button, string ask, Action run)
+    {
+        if (_confirming.Remove(button, out var pending))
+        {
+            pending.Timer.Stop();
+            button.Content = pending.Label;
+            run();
+            return;
+        }
+        var timer = new Avalonia.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(4) };
+        _confirming[button] = (button.Content?.ToString() ?? "", timer);
+        button.Content = ask;
+        timer.Tick += (_, _) =>
+        {
+            timer.Stop();
+            if (_confirming.Remove(button, out var p)) button.Content = p.Label;
+        };
+        timer.Start();
+    }
     private static bool TryHex(string? text, out Avalonia.Media.Color color)
     {
         color = default;
@@ -109,32 +220,35 @@ public partial class MainWindow
         };
     }
 
-    private void EditDefaults(Action<UserDefaults> edit)
+    private void EditDefaults(Action<Preset> edit)
     {
         if (_stLoading) return;
-        edit(_userDefaults);
-        SaveUserDefaults(DefaultsStatus, "Salvo.");
+        edit(_settingsPreset);
+        SavePresets(DefaultsStatus, "Salvo.");
     }
 
     private void EditTextStyle(Action<SlideText> edit)
     {
         if (_stLoading) return;
-        _userDefaults.TextStyle ??= _userDefaults.NewText("");
-        edit(_userDefaults.TextStyle);
-        SaveUserDefaults(DefaultsStatus, "Salvo.");
+        _settingsPreset.TextStyle ??= _settingsPreset.NewText("");
+        edit(_settingsPreset.TextStyle);
+        SavePresets(DefaultsStatus, "Salvo.");
     }
 
     private void ShowSettings()
     {
+        _settingsPreset = _library.For(_project?.PresetId);
+        RefreshPresetList();
         LoadSettings();
         CopyFromProjectButton.IsEnabled = EditorActive;
+        PresetFromProjectButton.IsEnabled = EditorActive;
         DefaultsStatus.Text = "";
         SettingsView.IsVisible = true;
     }
 
     private void CloseSettings() => SettingsView.IsVisible = false;
 
-    /// <summary>Mostra nos controles o que está salvo em <see cref="_userDefaults"/>.</summary>
+    /// <summary>Mostra nos controles o que está salvo em <see cref="_settingsPreset"/>.</summary>
     private void LoadSettings()
     {
         _stLoading = true;
@@ -142,7 +256,7 @@ public partial class MainWindow
         _loading = true;
         try
         {
-            var d = _userDefaults;
+            var d = _settingsPreset;
             SetChips(StFormatChips, [Math.Max(0, Array.IndexOf(FormatValues, d.Format))]);
             SetChips(StResolutionChips, [Math.Max(0, Array.IndexOf(VideoFormat.Resolutions, d.Resolution))]);
             SetChips(StEffectChips, d.Default.Effects.Select(e => Array.IndexOf(Effects, e)).Where(i => i >= 0).ToArray());

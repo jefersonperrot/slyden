@@ -111,7 +111,8 @@ Direção visual: tema escuro no estilo dos aplicativos Adobe. Maquete aprovada 
 - [x] Arrastar o texto na prévia (com ímã no centro), seletor de fonte com as fontes do computador (cada uma mostrada no próprio estilo), botões Centro horizontal / Centro do quadro e clique duplo nos sliders volta ao padrão; 178 testes
 - [x] Texto selecionado ganha moldura tracejada na prévia; animação do texto com controles (aparece após X s, fade de entrada, fica visível por Y s, fade de saída; vale em slides contínuos) e capa de exemplo com textos entrando em sequência; configuração padrão do usuário (Salvar como padrão / Voltar ao padrão de fábrica; estilo padrão dos textos novos) em %APPDATA%\Slyden\defaults.json; 187 testes
 - [x] Tela de Configurações (botão ⚙ no topo, fora dos projetos): formato, resolução, efeitos, transição, foto/fundo/sombra, música e estilo dos textos novos, salvos na hora; a seção no painel Padrão saiu (menos poluição)
-- [ ] Configurações: pasta padrão dos projetos, pasta de fontes extras, idioma, atalhos; vários modelos com nome
+- [x] Presets com nome (ex.: Casamento, Clientes): Configurações > Presets (novo, duplicar, novo a partir do projeto aberto, renomear, excluir, definir o padrão); a tela Novo projeto escolhe o preset; o projeto guarda o preset usado (textos novos seguem o estilo dele); o defaults.json antigo vira o primeiro preset; 189 testes
+- [ ] Configurações: pasta padrão dos projetos, pasta de fontes extras, idioma, atalhos
 - [ ] Mais estilos de animação de texto (subir suavemente, digitar, zoom); várias configurações salvas (modelos com nome)
 - [ ] Arrastar também o tamanho do texto (alças); cursor de mão ao passar sobre o texto; fontes dos textos de exemplo da capa que existam também no Mac
 - [ ] Incluir fotos de outras pastas (hoje só da pasta do projeto)
