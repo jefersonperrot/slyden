@@ -287,6 +287,7 @@ public partial class MainWindow : Window
     private void ShowHome()
     {
         StopPlayback(refresh: false);
+        SettingsView.IsVisible = false; // as Configurações ficam por cima da lista; sem isto o botão "Projetos" parecia não fazer nada
         if (_project is not null && _dirty) Save();
         RefreshProjectList();
         HomeView.IsVisible = true;
