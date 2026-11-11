@@ -98,6 +98,8 @@ Direção visual: tema escuro no estilo dos aplicativos Adobe. Maquete aprovada 
 - [x] Modos da música (aba Padrão > Música): "Ajustar os slides à música" (padrão; espalha as fotos pela música toda, trocas nas batidas, vale com ritmo Automático) e "Cortar a música onde os slides acabam"; fade-in e fade-out da música (0–10 s) na exportação; 174 testes
 - [x] Segundos por foto (sem música) digitados livremente (0,5 a 120 s), não mais opções fixas
 - [x] Botão Remover música (aparece quando há música) e aviso na aba Padrão quando segundos por foto estão definidos mas há música (os segundos são ignorados)
+- [x] Desfazer/Refazer (botões no topo, Ctrl+Z, Ctrl+Y / Ctrl+Shift+Z): até 100 passos, alterações em sequência rápida (sliders, digitação) contam como um; cobre fotos, ajustes, textos e música; zerado ao abrir outro projeto
+- [x] Remover música pede confirmação (2º clique em 4 s)
 - [ ] Segundos por foto COM música (trocar na batida mais próxima de cada N segundos) — avaliar
 - [ ] Prévia animada ainda não aplica o fade-in/out da música (só a exportação)
 - [ ] Render: 4K ainda ~10 quadros/s (sombra custa ~40%); avaliar sombra pré-calculada, reduzir fotos grandes antes do desenho, codificador de hardware

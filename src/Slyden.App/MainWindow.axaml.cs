@@ -160,12 +160,18 @@ public partial class MainWindow : Window
         SaveButton.Click += (_, _) => Save();
         MusicButton.Click += async (_, _) => await ChooseMusicAsync();
         RemoveMusicButton.Click += (_, _) => RemoveMusic();
+        UndoButton.Click += (_, _) => Undo();
+        RedoButton.Click += (_, _) => Redo();
         ExportButton.Click += async (_, _) => { ShowTab(3); await ExportOrCancelAsync(); };
         ExportButton2.Click += async (_, _) => await ExportOrCancelAsync();
         CancelExportButton.Click += (_, _) => CancelExport();
         KeyDown += (_, e) =>
         {
             if (e.Key == Key.S && e.KeyModifiers.HasFlag(KeyModifiers.Control)) { Save(); e.Handled = true; }
+            else if (e.Key == Key.Z && e.KeyModifiers == KeyModifiers.Control) { Undo(); e.Handled = true; }
+            else if ((e.Key == Key.Y && e.KeyModifiers == KeyModifiers.Control)
+                     || (e.Key == Key.Z && e.KeyModifiers == (KeyModifiers.Control | KeyModifiers.Shift)))
+            { Redo(); e.Handled = true; }
         };
 
         Fmt169.Click += (_, _) => SetFormat("16:9");
@@ -430,6 +436,7 @@ public partial class MainWindow : Window
         _selected = SlideList.SelectedIndex;
         LoadSlideControls();
         RefreshPreview();
+        ResetUndo();
         _ = LoadThumbnailsAsync(_items.ToList(), _folder);
     }
 
@@ -489,6 +496,7 @@ public partial class MainWindow : Window
     {
         if (_project is null) return;
         StopPlayback(refresh: false); // a prévia tocada mostraria a versão antiga
+        RecordChange();
         _dirty = true;
         UpdateSaveState();
     }
@@ -854,9 +862,33 @@ public partial class MainWindow : Window
         UpdateSummary();
     }
 
+    private void OnRemoveMusicTimeout(object? sender, EventArgs e) => ResetRemoveMusicConfirmation();
+
+    private bool _confirmingRemoveMusic;
+    private DispatcherTimer? _removeMusicTimer;
+
+    private void ResetRemoveMusicConfirmation()
+    {
+        _confirmingRemoveMusic = false;
+        _removeMusicTimer?.Stop();
+        RemoveMusicButton.Content = "Remover música";
+    }
+
+    /// <summary>Primeiro clique pede confirmação (volta ao normal em 4 s); o segundo remove.</summary>
     private void RemoveMusic()
     {
         if (_audio is null) return;
+        if (!_confirmingRemoveMusic)
+        {
+            _confirmingRemoveMusic = true;
+            RemoveMusicButton.Content = "Confirmar remoção?";
+            _removeMusicTimer ??= new DispatcherTimer { Interval = TimeSpan.FromSeconds(4) };
+            _removeMusicTimer.Tick -= OnRemoveMusicTimeout;
+            _removeMusicTimer.Tick += OnRemoveMusicTimeout;
+            _removeMusicTimer.Start();
+            return;
+        }
+        ResetRemoveMusicConfirmation();
         StopPlayback(refresh: true);
         _audio = null;
         MarkDirty();

@@ -17,6 +17,8 @@
                    VerticalAlignment="Center" Text="Nenhum projeto aberto" />
         <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
           <TextBlock x:Name="SaveState" Classes="hint" VerticalAlignment="Center" />
+          <Button x:Name="UndoButton" Classes="btn" Content="↶ Desfazer" IsEnabled="False" ToolTip.Tip="Desfazer (Ctrl+Z)" />
+          <Button x:Name="RedoButton" Classes="btn" Content="↷ Refazer" IsEnabled="False" ToolTip.Tip="Refazer (Ctrl+Y)" />
           <Button x:Name="SaveButton" Classes="btn" Content="Salvar" />
           <Button x:Name="MusicButton" Classes="btn" Content="Música…" />
           <Button x:Name="RemoveMusicButton" Classes="btn" Content="Remover música" IsVisible="False" />
