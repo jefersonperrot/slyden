@@ -1,0 +1,18 @@
+{
+ "bpm": 120,
+ "beats_per_photo": "auto",
+ "format": "16:9",
+ "default": {
+  "effects": ["zoom_in", "zoom_out", "pan_lr", "pan_rl"],
+  "order": "cycle",
+  "intensity": 0.15,
+  "transition": "fade",
+  "fade_beats": 0.5
+ },
+ "photos": [
+  {"file": "foto_001.jpg"},
+  {"file": "foto_002.jpg", "effect": "zoom_in", "intensity": 0.25, "transition": "cut"},
+  {"file": "foto_003.jpg", "effect": "none"},
+  {"file": "foto_004.jpg"}
+ ]
+}

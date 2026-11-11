@@ -1,0 +1,21 @@
+# .NET
+bin/
+obj/
+.vs/
+*.user
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+libs/
+
+# Material de teste (fotos de clientes e músicas com direitos autorais NÃO entram no repositório)
+*.jpg
+*.jpeg
+*.png
+*.mp3
+*.wav
+*.mp4
+samples/
+output/
