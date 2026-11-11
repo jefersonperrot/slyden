@@ -1,0 +1,215 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Slyden.App.MainWindow"
+        Title="Slyden" Width="1280" Height="800" MinWidth="980" MinHeight="640">
+
+  <Grid RowDefinitions="Auto,*,Auto">
+
+    <!-- topo -->
+    <Border Grid.Row="0" Background="#1F1F22" BorderBrush="#333338" BorderThickness="0,0,0,1" Height="40">
+      <Grid ColumnDefinitions="Auto,*,Auto" Margin="12,0">
+        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+          <Border Width="8" Height="8" CornerRadius="2" Background="#3B8BFF" />
+          <TextBlock Text="SLYDEN" FontWeight="Medium" LetterSpacing="2" FontSize="12" />
+        </StackPanel>
+        <TextBlock Grid.Column="1" x:Name="ProjectName" Classes="dim" HorizontalAlignment="Center"
+                   VerticalAlignment="Center" Text="Nenhum projeto aberto" />
+        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+          <Button x:Name="OpenFolderButton" Classes="btn" Content="Abrir pasta de fotos" />
+          <Button x:Name="MusicButton" Classes="btn" Content="Música…" />
+          <Button x:Name="ExportButton" Classes="btn primary" Content="Exportar" />
+        </StackPanel>
+      </Grid>
+    </Border>
+
+    <!-- meio -->
+    <Grid Grid.Row="1" ColumnDefinitions="*,320">
+
+      <!-- palco -->
+      <Grid Grid.Column="0" RowDefinitions="Auto,*,Auto">
+        <Border Grid.Row="0" BorderBrush="#333338" BorderThickness="0,0,0,1" Padding="12,8">
+          <Grid ColumnDefinitions="Auto,*">
+            <Border BorderBrush="#44444A" BorderThickness="1" CornerRadius="6" ClipToBounds="True">
+              <StackPanel Orientation="Horizontal">
+                <ToggleButton x:Name="Fmt169" Classes="seg" Content="16:9" IsChecked="True" />
+                <ToggleButton x:Name="Fmt916" Classes="seg" Content="9:16" />
+                <ToggleButton x:Name="Fmt11" Classes="seg" Content="1:1" />
+              </StackPanel>
+            </Border>
+            <TextBlock Grid.Column="1" x:Name="SlideInfo" Classes="hint" HorizontalAlignment="Right"
+                       VerticalAlignment="Center" Text="Abra uma pasta com fotos para começar" />
+          </Grid>
+        </Border>
+
+        <Border Grid.Row="1" Background="#0F0F11" Padding="20">
+          <Grid>
+            <Image x:Name="PreviewImage" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center" />
+            <TextBlock x:Name="EmptyHint" Classes="hint" Text="A prévia aparece aqui."
+                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+          </Grid>
+        </Border>
+
+        <Border Grid.Row="2" BorderBrush="#333338" BorderThickness="0,1,0,0" Padding="12,8">
+          <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+            <TextBlock Classes="dim" VerticalAlignment="Center" Text="Movimento" />
+            <Slider Grid.Column="1" x:Name="MotionSlider" Minimum="0" Maximum="1" Value="0.5" />
+            <TextBlock Grid.Column="2" x:Name="RhythmInfo" Classes="hint" VerticalAlignment="Center" Text="" />
+          </Grid>
+        </Border>
+      </Grid>
+
+      <!-- painel -->
+      <Border Grid.Column="1" Background="#1F1F22" BorderBrush="#333338" BorderThickness="1,0,0,0">
+        <Grid RowDefinitions="Auto,*">
+          <Border BorderBrush="#333338" BorderThickness="0,0,0,1">
+            <UniformGrid Rows="1">
+              <ToggleButton x:Name="TabSlide" Classes="tab" Content="Slide" IsChecked="True" />
+              <ToggleButton x:Name="TabText" Classes="tab" Content="Texto" />
+              <ToggleButton x:Name="TabDefault" Classes="tab" Content="Padrão" />
+              <ToggleButton x:Name="TabExport" Classes="tab" Content="Exportar" />
+            </UniformGrid>
+          </Border>
+
+          <ScrollViewer Grid.Row="1">
+            <Panel Margin="14">
+
+              <!-- aba Slide -->
+              <StackPanel x:Name="PaneSlide" Spacing="12">
+                <TextBlock Classes="h" Text="MOVIMENTO" />
+                <WrapPanel x:Name="EffectChips" />
+                <Grid ColumnDefinitions="*,150">
+                  <TextBlock Classes="dim" VerticalAlignment="Center" Text="Intensidade" />
+                  <Slider Grid.Column="1" x:Name="IntensitySlider" Minimum="5" Maximum="30" Value="15" />
+                </Grid>
+                <TextBlock Classes="h" Text="TRANSIÇÃO AO ENTRAR" />
+                <WrapPanel x:Name="TransitionChips" />
+                <TextBlock Classes="h" Text="DURAÇÃO E FOTO" />
+                <Grid ColumnDefinitions="*,90">
+                  <TextBlock Classes="dim" VerticalAlignment="Center" Text="Ciclos de batida" />
+                  <ComboBox Grid.Column="1" x:Name="LengthBox" HorizontalAlignment="Stretch" SelectedIndex="0">
+                    <ComboBoxItem>1</ComboBoxItem><ComboBoxItem>2</ComboBoxItem>
+                    <ComboBoxItem>3</ComboBoxItem><ComboBoxItem>4</ComboBoxItem>
+                  </ComboBox>
+                </Grid>
+                <Grid ColumnDefinitions="*,150">
+                  <TextBlock Classes="dim" VerticalAlignment="Center" Text="Escurecer foto" />
+                  <Slider Grid.Column="1" x:Name="DimSlider" Minimum="0" Maximum="100" Value="0" />
+                </Grid>
+                <Button x:Name="ResetSlideButton" Classes="btn" Content="Voltar ao padrão" HorizontalAlignment="Left" />
+              </StackPanel>
+
+              <!-- aba Texto -->
+              <StackPanel x:Name="PaneText" Spacing="10" IsVisible="False">
+                <TextBlock Classes="h" Text="TEXTOS NESTE SLIDE" />
+                <ListBox x:Name="TextList" MaxHeight="130" />
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <Button x:Name="AddTextButton" Classes="btn" Content="+ Adicionar texto" />
+                  <Button x:Name="RemoveTextButton" Classes="btn" Content="Remover" />
+                </StackPanel>
+                <StackPanel x:Name="TextEditor" Spacing="10">
+                  <TextBlock Classes="h" Text="TEXTO SELECIONADO" />
+                  <TextBox x:Name="TextContent" AcceptsReturn="True" Height="60" />
+                  <Grid ColumnDefinitions="*,150">
+                    <TextBlock Classes="dim" VerticalAlignment="Center" Text="Fonte" />
+                    <TextBox Grid.Column="1" x:Name="TextFont" />
+                  </Grid>
+                  <Grid ColumnDefinitions="*,150">
+                    <TextBlock Classes="dim" VerticalAlignment="Center" Text="Tamanho" />
+                    <Slider Grid.Column="1" x:Name="TextSize" Minimum="2" Maximum="20" Value="6" />
+                  </Grid>
+                  <Grid ColumnDefinitions="*,150">
+                    <TextBlock Classes="dim" VerticalAlignment="Center" Text="Alinhamento" />
+                    <ComboBox Grid.Column="1" x:Name="TextAlign" HorizontalAlignment="Stretch" SelectedIndex="1">
+                      <ComboBoxItem>Esquerda</ComboBoxItem><ComboBoxItem>Centro</ComboBoxItem><ComboBoxItem>Direita</ComboBoxItem>
+                    </ComboBox>
+                  </Grid>
+                  <Grid ColumnDefinitions="*,150">
+                    <TextBlock Classes="dim" VerticalAlignment="Center" Text="Posição X" />
+                    <Slider Grid.Column="1" x:Name="TextX" Minimum="0" Maximum="100" Value="50" />
+                  </Grid>
+                  <Grid ColumnDefinitions="*,150">
+                    <TextBlock Classes="dim" VerticalAlignment="Center" Text="Posição Y" />
+                    <Slider Grid.Column="1" x:Name="TextY" Minimum="0" Maximum="100" Value="50" />
+                  </Grid>
+                  <Grid ColumnDefinitions="*,90">
+                    <TextBlock Classes="dim" VerticalAlignment="Center" Text="Continua em (slides)" />
+                    <ComboBox Grid.Column="1" x:Name="TextSpan" HorizontalAlignment="Stretch" SelectedIndex="0">
+                      <ComboBoxItem>1</ComboBoxItem><ComboBoxItem>2</ComboBoxItem><ComboBoxItem>3</ComboBoxItem>
+                    </ComboBox>
+                  </Grid>
+                </StackPanel>
+              </StackPanel>
+
+              <!-- aba Padrão -->
+              <StackPanel x:Name="PaneDefault" Spacing="12" IsVisible="False">
+                <TextBlock Classes="h" Text="PARA TODAS AS FOTOS" />
+                <WrapPanel x:Name="DefaultEffectChips" />
+                <Grid ColumnDefinitions="*,150">
+                  <TextBlock Classes="dim" VerticalAlignment="Center" Text="Intensidade" />
+                  <Slider Grid.Column="1" x:Name="DefaultIntensity" Minimum="5" Maximum="30" Value="15" />
+                </Grid>
+                <TextBlock Classes="h" Text="TRANSIÇÃO" />
+                <WrapPanel x:Name="DefaultTransitionChips" />
+                <TextBlock Classes="h" Text="RITMO" />
+                <Grid ColumnDefinitions="*,140">
+                  <TextBlock Classes="dim" VerticalAlignment="Center" Text="Com música" />
+                  <ComboBox Grid.Column="1" x:Name="BeatsBox" HorizontalAlignment="Stretch" SelectedIndex="0">
+                    <ComboBoxItem>Automático</ComboBoxItem><ComboBoxItem>A cada 2 batidas</ComboBoxItem>
+                    <ComboBoxItem>A cada 4 batidas</ComboBoxItem><ComboBoxItem>A cada 8 batidas</ComboBoxItem>
+                  </ComboBox>
+                </Grid>
+                <Grid ColumnDefinitions="*,140">
+                  <TextBlock Classes="dim" VerticalAlignment="Center" Text="Sem música (telão)" />
+                  <ComboBox Grid.Column="1" x:Name="SecondsBox" HorizontalAlignment="Stretch" SelectedIndex="0">
+                    <ComboBoxItem>Pelas batidas (BPM)</ComboBoxItem><ComboBoxItem>5 s por foto</ComboBoxItem>
+                    <ComboBoxItem>8 s por foto</ComboBoxItem><ComboBoxItem>10 s por foto</ComboBoxItem>
+                  </ComboBox>
+                </Grid>
+              </StackPanel>
+
+              <!-- aba Exportar -->
+              <StackPanel x:Name="PaneExport" Spacing="12" IsVisible="False">
+                <TextBlock Classes="h" Text="SAÍDA" />
+                <TextBlock x:Name="ExportSummary" Classes="dim" TextWrapping="Wrap" Text="Formato 16:9 (1920×1080)." />
+                <Button x:Name="ExportButton2" Classes="btn primary" Content="Exportar vídeo…" HorizontalAlignment="Left" />
+                <ProgressBar x:Name="ExportProgress" Minimum="0" Maximum="100" Value="0" IsVisible="False" />
+                <TextBlock x:Name="ExportStatus" Classes="hint" TextWrapping="Wrap" />
+                <TextBlock Classes="hint" TextWrapping="Wrap" Text="Renderização local. Nenhuma foto sai do computador." />
+              </StackPanel>
+
+            </Panel>
+          </ScrollViewer>
+        </Grid>
+      </Border>
+    </Grid>
+
+    <!-- linha do tempo -->
+    <Border Grid.Row="2" Background="#1F1F22" BorderBrush="#333338" BorderThickness="0,1,0,0" Padding="12,8,12,12">
+      <StackPanel Spacing="8">
+        <Grid ColumnDefinitions="Auto,*">
+          <TextBlock FontWeight="Medium" Text="Linha do tempo" />
+          <TextBlock Grid.Column="1" x:Name="TimelineInfo" Classes="hint" HorizontalAlignment="Right" Text="" />
+        </Grid>
+        <ListBox x:Name="SlideList" Height="132" Background="Transparent"
+                 ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Disabled">
+          <ListBox.ItemsPanel>
+            <ItemsPanelTemplate><StackPanel Orientation="Horizontal" /></ItemsPanelTemplate>
+          </ListBox.ItemsPanel>
+          <ListBox.ItemTemplate>
+            <DataTemplate>
+              <Grid Width="150" Height="104" Background="#2A2A30">
+                <Image Source="{Binding Thumb}" Stretch="UniformToFill" />
+                <Border Background="#99000000" VerticalAlignment="Bottom" Padding="6,3">
+                  <Grid ColumnDefinitions="*,Auto">
+                    <TextBlock Text="{Binding Name}" FontSize="11" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Grid.Column="1" Text="{Binding Tags}" FontSize="10" Foreground="#E8A33A" />
+                  </Grid>
+                </Border>
+              </Grid>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+      </StackPanel>
+    </Border>
+  </Grid>
+</Window>

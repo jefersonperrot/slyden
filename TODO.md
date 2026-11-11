@@ -66,13 +66,20 @@ Atualizar este arquivo a cada etapa concluída ou nova ideia.
 - Ideia para depois (fora do escopo atual): clipes de vídeo entre as fotos com corte de início/fim
 - [ ] Exportar com otimizador (estilo JpegMini): reduzir o tamanho do vídeo mantendo a qualidade (CRF/preset por conteúdo, tamanho-alvo, comparação de qualidade); também otimizar JPEG das fotos de entrada. Retoma a ideia original do JpegMini
 
-## A fazer — interface (Avalonia)
-Direção visual: tema escuro no estilo dos aplicativos Adobe (Lightroom/Premiere). Prévia grande no centro, fotos em linha do tempo embaixo, painel lateral direito com efeitos, textos e exportação.
-- [ ] Escolher pasta de fotos e música
-- [ ] Tela de padrões (efeitos, intensidade, transição, ritmo)
-- [ ] Ajuste por foto + reordenar fotos
-- [ ] Pré-visualização rápida
-- [ ] Exportar (16:9 / 9:16) com barra de progresso
+## Interface (Avalonia 12) — primeira versão feita
+Direção visual: tema escuro no estilo dos aplicativos Adobe. Maquete aprovada em 11/11/2026. Prévia grande no centro, fotos em linha do tempo embaixo, painel lateral direito.
+- [x] Projeto `Slyden.App` (Avalonia 12.1.6); SkiaSharp do motor passou para 3.119.4 (o mesmo do Avalonia); 127 testes passando
+- [x] Tela: topo, prévia, formato 16:9/9:16/1:1, controle de movimento, painel (Slide, Texto, Padrão, Exportar), linha do tempo com miniaturas
+- [x] Abrir pasta de fotos, escolher música, exportar MP4 com barra de progresso
+- [x] Ajuste por foto (efeito, intensidade, transição, ciclos, escurecer) e padrão global; textos (adicionar/remover/editar fonte, tamanho, alinhamento, posição, continuação)
+- [ ] **Conferir a tela visualmente** (só foi verificado que abre sem erro; layout e cores ainda não foram vistos)
+- [ ] Onda da música com marcas de batida na linha do tempo
+- [ ] Reordenar e remover fotos; arrastar o texto na prévia
+- [ ] Salvar/abrir projeto (arquivo JSON + pasta) e Duplicar projeto
+- [ ] Reproduzir a prévia com música; aviso de rosto cortado na foto
+- [ ] Miniaturas mais rápidas (hoje decodifica a foto inteira; usar miniatura embutida/decodificação reduzida)
+- [ ] Exportar vários formatos de uma vez; otimizador de tamanho
+- [ ] Ícone, menus (Arquivo, Editar, Ajuda) e instalador
 
 ## A fazer — produto e negócio
 - [ ] Definir o nome do produto (hoje é nome de trabalho)

@@ -21,6 +21,7 @@ A decisão é fazer o produto **todo em C# (.NET + Avalonia)**, sem Python embut
 ```
 src/Slyden.Core    motor: áudio, detecção de batida, plano de trocas, configuração e render (SkiaSharp + ffmpeg)
 src/Slyden.Cli     linha de comando para testar o motor
+src/Slyden.App     aplicativo desktop (Avalonia 12), tema escuro
 tests/Slyden.Tests testes xUnit
 ```
 Precisa do .NET 9 SDK e de um `ffmpeg` (ao lado do programa, no PATH, ou na variável `SLYDEN_FFMPEG`).
@@ -29,6 +30,8 @@ dotnet test
 dotnet run --project src/Slyden.Cli -- beats musica.mp3 --photos 30 --json batidas.json
 dotnet run --project src/Slyden.Cli -- render pasta_fotos saida.mp4 --audio musica.mp3 --config config.json --format 9:16
 ```
+Para abrir o aplicativo: `dotnet run --project src/Slyden.App` (use o .NET de 64 bits e defina `SLYDEN_FFMPEG`).
+
 Sem `--audio` o vídeo sai mudo e usa o `bpm` da configuração. Se o `--config` não existir, é criado com os padrões
 (efeitos, intensidade, transição e exceção por foto) para você editar. O formato do arquivo é o mesmo de
 `prototype-python/exemplo-config.json`.

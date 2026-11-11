@@ -87,6 +87,10 @@ public sealed class SlideshowConfig
         }
     }
 
+    /// <summary>Cópia independente (a interface renderiza a prévia em outra thread enquanto o usuário continua editando).</summary>
+    public SlideshowConfig Clone() =>
+        JsonSerializer.Deserialize<SlideshowConfig>(JsonSerializer.Serialize(this, Json), Json)!;
+
     public void Save(string path) => File.WriteAllText(path, JsonSerializer.Serialize(this, Json));
 
     /// <summary>Configuração inicial para as fotos .jpg/.jpeg de uma pasta, em ordem alfabética.</summary>
