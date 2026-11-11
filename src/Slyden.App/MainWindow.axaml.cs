@@ -2,10 +2,10 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
+using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform.Storage;
-using Avalonia.Threading;
 using SkiaSharp;
 using Slyden.Core.Config;
 using Slyden.Core.Render;
@@ -13,7 +13,13 @@ using SlideText = Slyden.Core.Config.TextBlock;
 
 namespace Slyden.App;
 
-public sealed class SlideItem(PhotoSpec spec) : INotifyPropertyChanged
+public abstract class Notifying : INotifyPropertyChanged
+{
+    public event PropertyChangedEventHandler? PropertyChanged;
+    protected void Changed(string name) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+}
+
+public sealed class SlideItem(PhotoSpec spec) : Notifying
 {
     private Bitmap? _thumb;
     public PhotoSpec Spec { get; } = spec;
@@ -32,9 +38,25 @@ public sealed class SlideItem(PhotoSpec spec) : INotifyPropertyChanged
         }
     }
 
-    public event PropertyChangedEventHandler? PropertyChanged;
-    private void Changed(string name) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
     public void RefreshTags() => Changed(nameof(Tags));
+}
+
+public sealed class TextItem(SlideText text) : Notifying
+{
+    public SlideText Text { get; } = text;
+    public string Label => string.IsNullOrWhiteSpace(Text.Text) ? "(vazio)" : Text.Text.Replace("\r", "").Replace("\n", " ");
+    public void Refresh() => Changed(nameof(Label));
+}
+
+public sealed class ProjectItem(ProjectEntry entry) : Notifying
+{
+    private bool _confirming;
+    public ProjectEntry Entry { get; } = entry;
+    public string Name => Entry.Project.Name;
+    public string Details =>
+        $"{Entry.Project.Config.Photos.Count} fotos · {Entry.Project.PhotosFolder} · editado em {Entry.Project.Modified.ToLocalTime():dd/MM/yyyy HH:mm}";
+    public bool Confirming { get => _confirming; set { _confirming = value; Changed(nameof(DeleteLabel)); } }
+    public string DeleteLabel => _confirming ? "Confirmar exclusão" : "Excluir";
 }
 
 public partial class MainWindow : Window
@@ -51,14 +73,20 @@ public partial class MainWindow : Window
     private const int PreviewMaxSide = 1920;
     private const int PreviewCacheSize = 6;
 
+    private readonly ProjectStore _store = new(ProjectStore.DefaultRoot);
+    private ProjectFile? _project;
     private SlideshowConfig _cfg = new();
     private string _folder = "";
     private string? _audio;
+    private bool _dirty;
+
     private readonly ObservableCollection<SlideItem> _items = [];
+    private readonly ObservableCollection<TextItem> _texts = [];
     private int _selected = -1;
     private bool _loading;
     private int _generation;
     private bool _exporting;
+    private CancellationTokenSource? _exportCts;
 
     private readonly object _cacheLock = new();
     private readonly Dictionary<string, SKBitmap> _cache = [];
@@ -68,18 +96,25 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         SlideList.ItemsSource = _items;
+        TextList.ItemsSource = _texts;
 
         BuildChips(EffectChips, ["Padrão", .. Effects.Select(EffectName)], multi: false, OnSlideEffect);
         BuildChips(TransitionChips, ["Padrão", "Corte", "Fade"], multi: false, OnSlideTransition);
         BuildChips(DefaultEffectChips, Effects.Select(EffectName).ToArray(), multi: true, OnDefaultEffects);
         BuildChips(DefaultTransitionChips, ["Corte", "Fade"], multi: false, OnDefaultTransition);
-        SetChips(DefaultEffectChips, [1, 2, 3, 4]);
-        SetChips(DefaultTransitionChips, [0]);
 
-        OpenFolderButton.Click += async (_, _) => await OpenFolderAsync();
+        ProjectsButton.Click += (_, _) => ShowHome();
+        NewProjectButton.Click += async (_, _) => await NewProjectAsync();
+        ProjectList.DoubleTapped += (_, _) => { if (ProjectList.SelectedItem is ProjectItem p) OpenProject(p.Entry.Project); };
+        SaveButton.Click += (_, _) => Save();
         MusicButton.Click += async (_, _) => await ChooseMusicAsync();
-        ExportButton.Click += async (_, _) => { ShowTab(3); await ExportAsync(); };
-        ExportButton2.Click += async (_, _) => await ExportAsync();
+        ExportButton.Click += async (_, _) => { ShowTab(3); await ExportOrCancelAsync(); };
+        ExportButton2.Click += async (_, _) => await ExportOrCancelAsync();
+        CancelExportButton.Click += (_, _) => CancelExport();
+        KeyDown += (_, e) =>
+        {
+            if (e.Key == Key.S && e.KeyModifiers.HasFlag(KeyModifiers.Control)) { Save(); e.Handled = true; }
+        };
 
         Fmt169.Click += (_, _) => SetFormat("16:9");
         Fmt916.Click += (_, _) => SetFormat("9:16");
@@ -91,12 +126,22 @@ public partial class MainWindow : Window
         TabExport.Click += (_, _) => ShowTab(3);
 
         SlideList.SelectionChanged += (_, _) => { _selected = SlideList.SelectedIndex; LoadSlideControls(); RefreshPreview(); };
+        SlideList.KeyDown += (_, e) =>
+        {
+            if (e.Key == Key.Delete) { RemovePhoto(); e.Handled = true; }
+        };
         MotionSlider.ValueChanged += (_, _) => RefreshPreview();
+
+        MoveLeftButton.Click += (_, _) => MovePhoto(-1);
+        MoveRightButton.Click += (_, _) => MovePhoto(1);
+        RemovePhotoButton.Click += (_, _) => RemovePhoto();
+        AddPhotosButton.Click += async (_, _) => await AddPhotosAsync();
 
         IntensitySlider.ValueChanged += (_, _) => EditSlide(s => s.Intensity = IntensitySlider.Value / 100);
         LengthBox.SelectionChanged += (_, _) => EditSlide(s => s.Length = LengthBox.SelectedIndex + 1);
         DimSlider.ValueChanged += (_, _) => EditSlide(s => s.Dim = DimSlider.Value / 100);
         ResetSlideButton.Click += (_, _) => ResetSlide();
+        CoverButton.Click += (_, _) => CreateCover();
 
         DefaultIntensity.ValueChanged += (_, _) => EditDefault(() => _cfg.Default.Intensity = DefaultIntensity.Value / 100);
         BeatsBox.SelectionChanged += (_, _) => EditDefault(() => _cfg.BeatsPerPhoto = BeatsBox.SelectedIndex switch { 1 => 2, 2 => 4, 3 => 8, _ => null });
@@ -105,7 +150,7 @@ public partial class MainWindow : Window
         TextList.SelectionChanged += (_, _) => LoadTextEditor();
         AddTextButton.Click += (_, _) => AddText();
         RemoveTextButton.Click += (_, _) => RemoveText();
-        TextContent.TextChanged += (_, _) => EditText(t => t.Text = TextContent.Text ?? "", refreshList: true);
+        TextContent.TextChanged += (_, _) => EditText(t => t.Text = TextContent.Text ?? "");
         TextFont.TextChanged += (_, _) => EditText(t => t.Font = string.IsNullOrWhiteSpace(TextFont.Text) ? "Arial" : TextFont.Text!.Trim());
         TextSize.ValueChanged += (_, _) => EditText(t => t.Size = TextSize.Value / 100);
         TextAlign.SelectionChanged += (_, _) => EditText(t => t.Align = (Slyden.Core.Config.TextAlign)Math.Max(0, TextAlign.SelectedIndex));
@@ -114,7 +159,147 @@ public partial class MainWindow : Window
         TextSpan.SelectionChanged += (_, _) => EditText(t => t.Span = TextSpan.SelectedIndex + 1);
 
         TextEditor.IsEnabled = false;
+        ShowHome();
+    }
+
+    protected override void OnClosing(WindowClosingEventArgs e)
+    {
+        if (_project is not null && _dirty) Save();
+        base.OnClosing(e);
+    }
+
+    // ---------- projetos ----------
+
+    private void ShowHome()
+    {
+        if (_project is not null && _dirty) Save();
+        RefreshProjectList();
+        HomeView.IsVisible = true;
+    }
+
+    private void RefreshProjectList()
+    {
+        var list = _store.List().Select(e => new ProjectItem(e)).ToList();
+        ProjectList.ItemsSource = list;
+        NoProjects.IsVisible = list.Count == 0;
+    }
+
+    private async Task NewProjectAsync()
+    {
+        HomeMessage.Text = "";
+        var picked = await StorageProvider.OpenFolderPickerAsync(
+            new FolderPickerOpenOptions { Title = "Pasta com as fotos do novo projeto", AllowMultiple = false });
+        if (picked.Count == 0 || picked[0].TryGetLocalPath() is not { } path) return;
+
+        var config = SlideshowConfig.CreateFor(path);
+        if (config.Photos.Count == 0) { HomeMessage.Text = "Essa pasta não tem fotos .jpg."; return; }
+
+        var project = new ProjectFile
+        {
+            Name = Path.GetFileName(path.TrimEnd('\\', '/')) is { Length: > 0 } n ? n : "Novo projeto",
+            PhotosFolder = path,
+            Config = config,
+        };
+        _store.Save(project);
+        OpenProject(project);
+    }
+
+    private void OnProjectAction(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not Button { DataContext: ProjectItem item } button) return;
+        HomeMessage.Text = "";
+        switch (button.Tag as string)
+        {
+            case "open":
+                OpenProject(item.Entry.Project);
+                break;
+            case "duplicate":
+                _store.Duplicate(item.Entry.Project.Id);
+                RefreshProjectList();
+                break;
+            case "delete":
+                if (!item.Confirming) { item.Confirming = true; break; }
+                _store.Delete(item.Entry.Project.Id);
+                RefreshProjectList();
+                break;
+        }
+    }
+
+    private void OpenProject(ProjectFile project)
+    {
+        if (!Directory.Exists(project.PhotosFolder))
+        {
+            HomeMessage.Text = $"A pasta de fotos não foi encontrada: {project.PhotosFolder}";
+            return;
+        }
+
+        _project = project;
+        _cfg = project.Config;
+        _folder = project.PhotosFolder;
+        _audio = project.AudioPath is { } a && File.Exists(a) ? a : null;
+        _dirty = false;
+        ClearCache();
+
+        _loading = true;
+        _items.Clear();
+        foreach (var photo in _cfg.Photos) _items.Add(new SlideItem(photo));
+        SyncGlobalControls();
+        _loading = false;
+
+        PreviewImage.Source = null;
+        EmptyHint.IsVisible = true;
+        HomeView.IsVisible = false;
+        UpdateSaveState();
         UpdateSummary();
+        ExportStatus.Text = "";
+        SlideList.SelectedIndex = _items.Count > 0 ? 0 : -1;
+        _selected = SlideList.SelectedIndex;
+        LoadSlideControls();
+        RefreshPreview();
+        _ = LoadThumbnailsAsync(_items.ToList(), _folder);
+    }
+
+    private void SyncGlobalControls()
+    {
+        SetChips(DefaultEffectChips, _cfg.Default.Effects.Select(e => Array.IndexOf(Effects, e)).Where(i => i >= 0).ToArray());
+        SetChips(DefaultTransitionChips, [(int)_cfg.Default.Transition]);
+        DefaultIntensity.Value = _cfg.Default.Intensity * 100;
+        BeatsBox.SelectedIndex = _cfg.BeatsPerPhoto switch { 2 => 1, 4 => 2, 8 => 3, _ => 0 };
+        SecondsBox.SelectedIndex = _cfg.SecondsPerPhoto switch { 5 => 1, 8 => 2, 10 => 3, _ => 0 };
+        Fmt169.IsChecked = _cfg.Format == "16:9";
+        Fmt916.IsChecked = _cfg.Format == "9:16";
+        Fmt11.IsChecked = _cfg.Format == "1:1";
+    }
+
+    private void Save()
+    {
+        if (_project is null) return;
+        _project.PhotosFolder = _folder;
+        _project.AudioPath = _audio;
+        _project.Config = _cfg;
+        try
+        {
+            _store.Save(_project);
+            _dirty = false;
+        }
+        catch (Exception ex)
+        {
+            SlideInfo.Text = "Não foi possível salvar: " + ex.Message;
+        }
+        UpdateSaveState();
+    }
+
+    private void MarkDirty()
+    {
+        if (_project is null) return;
+        _dirty = true;
+        UpdateSaveState();
+    }
+
+    private void UpdateSaveState()
+    {
+        ProjectName.Text = _project is null ? "Nenhum projeto aberto" : _project.Name + (_dirty ? " •" : "");
+        SaveState.Text = _project is null ? "" : _dirty ? "alterações não salvas" : "salvo";
     }
 
     // ---------- abas e chips ----------
@@ -157,42 +342,13 @@ public partial class MainWindow : Window
         foreach (var chip in panel.Children.OfType<ToggleButton>()) chip.IsChecked = on.Contains((int)chip.Tag!);
     }
 
-    // ---------- projeto ----------
-
-    private async Task OpenFolderAsync()
-    {
-        var picked = await StorageProvider.OpenFolderPickerAsync(
-            new FolderPickerOpenOptions { Title = "Pasta com as fotos", AllowMultiple = false });
-        if (picked.Count == 0 || picked[0].TryGetLocalPath() is not { } path) return;
-
-        var fresh = SlideshowConfig.CreateFor(path);
-        if (fresh.Photos.Count == 0)
-        {
-            SlideInfo.Text = "Essa pasta não tem fotos .jpg.";
-            return;
-        }
-        fresh.Format = _cfg.Format;
-        _cfg = fresh;
-        _folder = path;
-        ClearCache();
-
-        _loading = true;
-        _items.Clear();
-        foreach (var photo in _cfg.Photos) _items.Add(new SlideItem(photo));
-        _loading = false;
-
-        ProjectName.Text = Path.GetFileName(path.TrimEnd('\\', '/'));
-        TimelineInfo.Text = $"{_items.Count} fotos";
-        UpdateSummary();
-        SlideList.SelectedIndex = 0;
-        _ = LoadThumbnailsAsync(_items.ToList(), path);
-    }
+    // ---------- fotos ----------
 
     private async Task LoadThumbnailsAsync(List<SlideItem> items, string folder)
     {
         foreach (var item in items)
         {
-            if (folder != _folder) return; // trocou de pasta
+            if (folder != _folder) return; // trocou de projeto
             Bitmap? thumb = await Task.Run(() =>
             {
                 try
@@ -206,8 +362,89 @@ public partial class MainWindow : Window
         }
     }
 
+    private void RemovePhoto()
+    {
+        if (_selected < 0 || _selected >= _cfg.Photos.Count) return;
+        int at = _selected;
+        _cfg.Photos.RemoveAt(at);
+        _items.RemoveAt(at);
+        MarkDirty();
+        TimelineInfo.Text = $"{_items.Count} fotos";
+        int next = Math.Min(at, _items.Count - 1);
+        SlideList.SelectedIndex = next;
+        _selected = next;
+        LoadSlideControls();
+        if (next < 0)
+        {
+            PreviewImage.Source = null;
+            EmptyHint.IsVisible = true;
+            SlideInfo.Text = "Projeto sem fotos. Use + Fotos para incluir de novo.";
+        }
+        else RefreshPreview();
+    }
+
+    private void MovePhoto(int direction)
+    {
+        int from = _selected, to = _selected + direction;
+        if (from < 0 || to < 0 || to >= _cfg.Photos.Count) return;
+        var spec = _cfg.Photos[from];
+        _cfg.Photos.RemoveAt(from);
+        _cfg.Photos.Insert(to, spec);
+        _items.Move(from, to);
+        SlideList.SelectedIndex = to;
+        _selected = to;
+        MarkDirty();
+        LoadSlideControls();
+        RefreshPreview();
+    }
+
+    private async Task AddPhotosAsync()
+    {
+        if (_project is null) return;
+        var start = await StorageProvider.TryGetFolderFromPathAsync(_folder);
+        var picked = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = "Incluir fotos da pasta do projeto",
+            AllowMultiple = true,
+            SuggestedStartLocation = start,
+            FileTypeFilter = [new FilePickerFileType("Fotos JPG") { Patterns = ["*.jpg", "*.jpeg"] }],
+        });
+        if (picked.Count == 0) return;
+
+        string root = Path.GetFullPath(_folder).TrimEnd('\\', '/');
+        var added = new List<SlideItem>();
+        int skipped = 0;
+        foreach (var file in picked)
+        {
+            if (file.TryGetLocalPath() is not { } full) continue;
+            string dir = Path.GetDirectoryName(Path.GetFullPath(full))!.TrimEnd('\\', '/');
+            string name = Path.GetFileName(full);
+            if (!string.Equals(dir, root, StringComparison.OrdinalIgnoreCase)) { skipped++; continue; }
+            if (_cfg.Photos.Any(p => string.Equals(p.File, name, StringComparison.OrdinalIgnoreCase))) continue;
+            var spec = new PhotoSpec { File = name };
+            _cfg.Photos.Add(spec);
+            var item = new SlideItem(spec);
+            _items.Add(item);
+            added.Add(item);
+        }
+
+        if (added.Count > 0)
+        {
+            MarkDirty();
+            TimelineInfo.Text = $"{_items.Count} fotos";
+            SlideList.SelectedItem = added[0];
+            _ = LoadThumbnailsAsync(added, _folder);
+        }
+        SlideInfo.Text = skipped > 0
+            ? $"{skipped} foto(s) ignorada(s): só dá para incluir fotos da pasta do projeto ({_folder})."
+            : added.Count > 0 ? $"{added.Count} foto(s) incluída(s)." : "Essas fotos já estão no projeto.";
+    }
+
+    // ---------- música, formato, resumo ----------
+
     private async Task ChooseMusicAsync()
     {
+        if (_project is null) return;
         var picked = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
         {
             Title = "Música do vídeo",
@@ -216,6 +453,7 @@ public partial class MainWindow : Window
         });
         if (picked.Count == 0 || picked[0].TryGetLocalPath() is not { } path) return;
         _audio = path;
+        MarkDirty();
         UpdateSummary();
     }
 
@@ -223,6 +461,7 @@ public partial class MainWindow : Window
     {
         _cfg.Format = format;
         Fmt169.IsChecked = format == "16:9"; Fmt916.IsChecked = format == "9:16"; Fmt11.IsChecked = format == "1:1";
+        MarkDirty();
         UpdateSummary();
         RefreshPreview();
     }
@@ -235,6 +474,7 @@ public partial class MainWindow : Window
         RhythmInfo.Text = _audio is null
             ? (_cfg.SecondsPerPhoto is { } s ? $"sem música · {s} s por foto" : $"sem música · {_cfg.Bpm:0} BPM")
             : $"música: {Path.GetFileName(_audio)}";
+        TimelineInfo.Text = $"{_items.Count} fotos";
     }
 
     // ---------- edição do slide ----------
@@ -243,15 +483,20 @@ public partial class MainWindow : Window
 
     private void LoadSlideControls()
     {
-        if (Current is not { } spec) { SlideInfo.Text = "Abra uma pasta com fotos para começar"; return; }
+        if (Current is not { } spec)
+        {
+            _texts.Clear();
+            TextEditor.IsEnabled = false;
+            return;
+        }
         _loading = true;
         SetChips(EffectChips, [spec.Effect is { } e ? 1 + Array.IndexOf(Effects, e) : 0]);
         SetChips(TransitionChips, [spec.Transition is { } t ? 1 + (int)t : 0]);
         IntensitySlider.Value = (spec.Intensity ?? _cfg.Default.Intensity) * 100;
         LengthBox.SelectedIndex = Math.Clamp((spec.Length ?? 1) - 1, 0, 3);
         DimSlider.Value = (spec.Dim ?? 0) * 100;
-        RefreshTextList(select: 0);
         _loading = false;
+        ReloadTexts(select: 0);
         SlideInfo.Text = $"Foto {_selected + 1} de {_cfg.Photos.Count} · {spec.File}";
     }
 
@@ -260,6 +505,7 @@ public partial class MainWindow : Window
         if (_loading || Current is not { } spec) return;
         edit(spec);
         _items[_selected].RefreshTags();
+        MarkDirty();
         RefreshPreview();
     }
 
@@ -274,8 +520,32 @@ public partial class MainWindow : Window
         if (Current is not { } spec) return;
         spec.Effect = null; spec.Intensity = null; spec.Transition = null; spec.Length = null; spec.Dim = null;
         _items[_selected].RefreshTags();
+        MarkDirty();
         LoadSlideControls();
         RefreshPreview();
+    }
+
+    private void CreateCover()
+    {
+        if (Current is not { } spec) return;
+        spec.Length = 2;
+        spec.Dim ??= 0.4;
+        if (spec.Texts is null or { Count: 0 })
+        {
+            spec.Texts =
+            [
+                new SlideText { Text = "Wedding day", Font = "Segoe Script", Size = 0.085, Align = Slyden.Core.Config.TextAlign.Left, X = 0.08, Y = 0.30 },
+                new SlideText { Text = "Maria e João", Font = "Georgia", Bold = true, Size = 0.12, Color = "#FFF1CC", Y = 0.52, Span = 2 },
+                new SlideText { Text = DateTime.Today.ToString("dd/MM/yyyy"), Font = "Century Gothic", Size = 0.04,
+                                Align = Slyden.Core.Config.TextAlign.Right, X = 0.92, Y = 0.90 },
+            ];
+        }
+        _items[_selected].RefreshTags();
+        MarkDirty();
+        LoadSlideControls();
+        ShowTab(1);
+        RefreshPreview();
+        SlideInfo.Text = "Capa criada. Troque os textos na aba Texto. Use ◀ para levar esta foto ao início.";
     }
 
     // ---------- padrão ----------
@@ -284,6 +554,7 @@ public partial class MainWindow : Window
     {
         if (_loading) return;
         edit();
+        MarkDirty();
         UpdateSummary();
         RefreshPreview();
     }
@@ -296,27 +567,24 @@ public partial class MainWindow : Window
 
     // ---------- textos ----------
 
-    private void RefreshTextList(int select)
+    private void ReloadTexts(int select)
     {
         bool was = _loading;
         _loading = true;
-        var texts = Current?.Texts ?? [];
-        TextList.ItemsSource = texts.Select(t => string.IsNullOrWhiteSpace(t.Text) ? "(vazio)" : t.Text.Replace("\n", " ")).ToList();
-        if (texts.Count > 0) TextList.SelectedIndex = Math.Clamp(select, 0, texts.Count - 1);
+        _texts.Clear();
+        foreach (var t in Current?.Texts ?? []) _texts.Add(new TextItem(t));
+        if (_texts.Count > 0) TextList.SelectedIndex = Math.Clamp(select, 0, _texts.Count - 1);
         _loading = was;
         LoadTextEditor();
     }
 
-    private SlideText? CurrentText =>
-        Current?.Texts is { } list && TextList.SelectedIndex >= 0 && TextList.SelectedIndex < list.Count
-            ? list[TextList.SelectedIndex] : null;
+    private SlideText? CurrentText => TextList.SelectedItem is TextItem item ? item.Text : null;
 
     private void LoadTextEditor()
     {
         var text = CurrentText;
         TextEditor.IsEnabled = text is not null;
-        if (text is null) return;
-        bool was = _loading;
+        if (text is null || _loading) return;
         _loading = true;
         TextContent.Text = text.Text;
         TextFont.Text = text.Font;
@@ -325,7 +593,7 @@ public partial class MainWindow : Window
         TextX.Value = text.X * 100;
         TextY.Value = text.Y * 100;
         TextSpan.SelectedIndex = Math.Clamp(text.Span - 1, 0, 2);
-        _loading = was;
+        _loading = false;
     }
 
     private void AddText()
@@ -333,7 +601,8 @@ public partial class MainWindow : Window
         if (Current is not { } spec) return;
         (spec.Texts ??= []).Add(new SlideText { Text = "Novo texto", Font = "Georgia", Size = 0.08 });
         _items[_selected].RefreshTags();
-        RefreshTextList(select: spec.Texts.Count - 1);
+        MarkDirty();
+        ReloadTexts(select: spec.Texts.Count - 1);
         RefreshPreview();
     }
 
@@ -344,15 +613,18 @@ public partial class MainWindow : Window
         spec.Texts.Remove(text);
         if (spec.Texts.Count == 0) spec.Texts = null;
         _items[_selected].RefreshTags();
-        RefreshTextList(select: at);
+        MarkDirty();
+        ReloadTexts(select: at);
         RefreshPreview();
     }
 
-    private void EditText(Action<SlideText> edit, bool refreshList = false)
+    /// <summary>Edita o texto selecionado sem recarregar a lista nem o editor (senão o campo perde o foco a cada letra).</summary>
+    private void EditText(Action<SlideText> edit)
     {
         if (_loading || CurrentText is not { } text) return;
         edit(text);
-        if (refreshList) RefreshTextList(select: TextList.SelectedIndex);
+        (TextList.SelectedItem as TextItem)?.Refresh();
+        MarkDirty();
         RefreshPreview();
     }
 
@@ -362,7 +634,7 @@ public partial class MainWindow : Window
     {
         if (_cfg.Photos.Count == 0 || _selected < 0) return;
         int generation = ++_generation;
-        await Task.Delay(40); // junta várias mudanças seguidas (arrastar um controle)
+        await Task.Delay(40); // junta várias mudanças seguidas (arrastar um controle, digitar)
         if (generation != _generation) return;
 
         var snapshot = _cfg.Clone();
@@ -439,22 +711,39 @@ public partial class MainWindow : Window
 
     // ---------- exportar ----------
 
+    private async Task ExportOrCancelAsync()
+    {
+        if (_exporting) { CancelExport(); return; }
+        await ExportAsync();
+    }
+
+    private void CancelExport()
+    {
+        if (_exportCts is null) return;
+        _exportCts.Cancel();
+        ExportStatus.Text = "Cancelando…";
+    }
+
     private async Task ExportAsync()
     {
         if (_exporting) return;
-        if (_cfg.Photos.Count == 0) { ExportStatus.Text = "Abra uma pasta com fotos primeiro."; return; }
+        if (_cfg.Photos.Count == 0) { ExportStatus.Text = "O projeto não tem fotos."; return; }
 
         var file = await StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
         {
             Title = "Salvar vídeo",
-            SuggestedFileName = $"{ProjectName.Text}-{_cfg.Format.Replace(':', 'x')}.mp4",
+            SuggestedFileName = $"{_project?.Name ?? "slyden"}-{_cfg.Format.Replace(':', 'x')}.mp4",
             DefaultExtension = "mp4",
             FileTypeChoices = [new FilePickerFileType("Vídeo MP4") { Patterns = ["*.mp4"] }],
         });
         if (file?.TryGetLocalPath() is not { } output) return;
 
         _exporting = true;
-        ExportButton.IsEnabled = ExportButton2.IsEnabled = false;
+        _exportCts = new CancellationTokenSource();
+        var token = _exportCts.Token;
+        ExportButton.Content = "Cancelar exportação";
+        ExportButton2.IsEnabled = false;
+        CancelExportButton.IsVisible = true;
         ExportProgress.IsVisible = true;
         ExportProgress.Value = 0;
         ExportStatus.Text = "Renderizando…";
@@ -462,15 +751,20 @@ public partial class MainWindow : Window
         var request = new RenderRequest(_folder, output, _cfg.Clone(), _audio);
         var progress = new Progress<RenderProgress>(p =>
         {
+            if (token.IsCancellationRequested) return;
             ExportProgress.Value = p.Fraction * 100;
             ExportStatus.Text = $"Renderizando… foto {p.Slide} de {p.Slides}";
         });
 
         try
         {
-            var summary = await Task.Run(() => SlideshowRenderer.Render(request, progress));
+            var summary = await Task.Run(() => SlideshowRenderer.Render(request, progress, token), token);
             ExportStatus.Text = $"Pronto: {output} ({summary.DurationSeconds:0} s, {summary.Slides} fotos)." +
                 (summary.Warnings.Count > 0 ? "\n" + string.Join("\n", summary.Warnings.Select(w => "Aviso: " + w)) : "");
+        }
+        catch (OperationCanceledException)
+        {
+            ExportStatus.Text = "Exportação cancelada. Nenhum arquivo foi criado.";
         }
         catch (Exception ex)
         {
@@ -479,7 +773,11 @@ public partial class MainWindow : Window
         finally
         {
             _exporting = false;
-            ExportButton.IsEnabled = ExportButton2.IsEnabled = true;
+            _exportCts.Dispose();
+            _exportCts = null;
+            ExportButton.Content = "Exportar";
+            ExportButton2.IsEnabled = true;
+            CancelExportButton.IsVisible = false;
             ExportProgress.IsVisible = false;
         }
     }

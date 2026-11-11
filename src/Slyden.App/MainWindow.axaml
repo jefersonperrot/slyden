@@ -8,14 +8,16 @@
     <!-- topo -->
     <Border Grid.Row="0" Background="#1F1F22" BorderBrush="#333338" BorderThickness="0,0,0,1" Height="40">
       <Grid ColumnDefinitions="Auto,*,Auto" Margin="12,0">
-        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+        <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
           <Border Width="8" Height="8" CornerRadius="2" Background="#3B8BFF" />
           <TextBlock Text="SLYDEN" FontWeight="Medium" LetterSpacing="2" FontSize="12" />
+          <Button x:Name="ProjectsButton" Classes="btn" Padding="10,3" Content="Projetos" />
         </StackPanel>
         <TextBlock Grid.Column="1" x:Name="ProjectName" Classes="dim" HorizontalAlignment="Center"
                    VerticalAlignment="Center" Text="Nenhum projeto aberto" />
         <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-          <Button x:Name="OpenFolderButton" Classes="btn" Content="Abrir pasta de fotos" />
+          <TextBlock x:Name="SaveState" Classes="hint" VerticalAlignment="Center" />
+          <Button x:Name="SaveButton" Classes="btn" Content="Salvar" />
           <Button x:Name="MusicButton" Classes="btn" Content="Música…" />
           <Button x:Name="ExportButton" Classes="btn primary" Content="Exportar" />
         </StackPanel>
@@ -96,12 +98,20 @@
                   <Slider Grid.Column="1" x:Name="DimSlider" Minimum="0" Maximum="100" Value="0" />
                 </Grid>
                 <Button x:Name="ResetSlideButton" Classes="btn" Content="Voltar ao padrão" HorizontalAlignment="Left" />
+                <TextBlock Classes="h" Text="CAPA" />
+                <Button x:Name="CoverButton" Classes="btn" Content="Criar capa nesta foto" HorizontalAlignment="Left" />
+                <TextBlock Classes="hint" TextWrapping="Wrap"
+                           Text="Dura 2 ciclos, escurece a foto e adiciona título, nomes e data. Edite os textos na aba Texto." />
               </StackPanel>
 
               <!-- aba Texto -->
               <StackPanel x:Name="PaneText" Spacing="10" IsVisible="False">
                 <TextBlock Classes="h" Text="TEXTOS NESTE SLIDE" />
-                <ListBox x:Name="TextList" MaxHeight="130" />
+                <ListBox x:Name="TextList" MaxHeight="130">
+                  <ListBox.ItemTemplate>
+                    <DataTemplate><TextBlock Text="{Binding Label}" TextTrimming="CharacterEllipsis" /></DataTemplate>
+                  </ListBox.ItemTemplate>
+                </ListBox>
                 <StackPanel Orientation="Horizontal" Spacing="8">
                   <Button x:Name="AddTextButton" Classes="btn" Content="+ Adicionar texto" />
                   <Button x:Name="RemoveTextButton" Classes="btn" Content="Remover" />
@@ -171,7 +181,10 @@
               <StackPanel x:Name="PaneExport" Spacing="12" IsVisible="False">
                 <TextBlock Classes="h" Text="SAÍDA" />
                 <TextBlock x:Name="ExportSummary" Classes="dim" TextWrapping="Wrap" Text="Formato 16:9 (1920×1080)." />
-                <Button x:Name="ExportButton2" Classes="btn primary" Content="Exportar vídeo…" HorizontalAlignment="Left" />
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <Button x:Name="ExportButton2" Classes="btn primary" Content="Exportar vídeo…" />
+                  <Button x:Name="CancelExportButton" Classes="btn" Content="Cancelar exportação" IsVisible="False" />
+                </StackPanel>
                 <ProgressBar x:Name="ExportProgress" Minimum="0" Maximum="100" Value="0" IsVisible="False" />
                 <TextBlock x:Name="ExportStatus" Classes="hint" TextWrapping="Wrap" />
                 <TextBlock Classes="hint" TextWrapping="Wrap" Text="Renderização local. Nenhuma foto sai do computador." />
@@ -186,9 +199,17 @@
     <!-- linha do tempo -->
     <Border Grid.Row="2" Background="#1F1F22" BorderBrush="#333338" BorderThickness="0,1,0,0" Padding="12,8,12,12">
       <StackPanel Spacing="8">
-        <Grid ColumnDefinitions="Auto,*">
-          <TextBlock FontWeight="Medium" Text="Linha do tempo" />
-          <TextBlock Grid.Column="1" x:Name="TimelineInfo" Classes="hint" HorizontalAlignment="Right" Text="" />
+        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+          <TextBlock FontWeight="Medium" Text="Linha do tempo" VerticalAlignment="Center" />
+          <TextBlock Grid.Column="1" x:Name="TimelineInfo" Classes="hint" VerticalAlignment="Center" Text="" />
+          <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6">
+            <Button x:Name="MoveLeftButton" Classes="btn" Padding="8,3" Content="◀" ToolTip.Tip="Mover para antes" />
+            <Button x:Name="MoveRightButton" Classes="btn" Padding="8,3" Content="▶" ToolTip.Tip="Mover para depois" />
+            <Button x:Name="RemovePhotoButton" Classes="btn" Padding="10,3" Content="Remover foto"
+                    ToolTip.Tip="Tira do projeto (o arquivo não é apagado). Atalho: Delete" />
+            <Button x:Name="AddPhotosButton" Classes="btn" Padding="10,3" Content="+ Fotos"
+                    ToolTip.Tip="Voltar a incluir fotos da pasta do projeto" />
+          </StackPanel>
         </Grid>
         <ListBox x:Name="SlideList" Height="132" Background="Transparent"
                  ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Disabled">
@@ -210,6 +231,40 @@
           </ListBox.ItemTemplate>
         </ListBox>
       </StackPanel>
+    </Border>
+    <!-- tela de projetos (cobre o editor) -->
+    <Border x:Name="HomeView" Grid.Row="1" Grid.RowSpan="2" Background="#161618" Padding="40,28">
+      <Grid RowDefinitions="Auto,*" MaxWidth="900">
+        <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,20">
+          <StackPanel Spacing="4">
+            <TextBlock Text="Projetos" FontSize="22" FontWeight="Medium" />
+            <TextBlock Classes="hint" Text="Escolha um projeto para continuar ou crie um novo a partir de uma pasta de fotos." />
+            <TextBlock x:Name="HomeMessage" Foreground="#E8A33A" TextWrapping="Wrap" />
+          </StackPanel>
+          <Button Grid.Column="1" x:Name="NewProjectButton" Classes="btn primary" Content="Novo projeto" VerticalAlignment="Center" />
+        </Grid>
+        <Grid Grid.Row="1">
+          <ListBox x:Name="ProjectList" Background="Transparent">
+            <ListBox.ItemTemplate>
+              <DataTemplate>
+                <Grid ColumnDefinitions="*,Auto" Margin="4,6">
+                  <StackPanel Spacing="2">
+                    <TextBlock Text="{Binding Name}" FontSize="15" FontWeight="Medium" />
+                    <TextBlock Text="{Binding Details}" Classes="hint" TextTrimming="CharacterEllipsis" />
+                  </StackPanel>
+                  <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                    <Button Classes="btn primary" Content="Abrir" Tag="open" Click="OnProjectAction" />
+                    <Button Classes="btn" Content="Duplicar" Tag="duplicate" Click="OnProjectAction" />
+                    <Button Classes="btn" Content="{Binding DeleteLabel}" Tag="delete" Click="OnProjectAction" />
+                  </StackPanel>
+                </Grid>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+          <TextBlock x:Name="NoProjects" Classes="hint" HorizontalAlignment="Center" VerticalAlignment="Center"
+                     Text="Nenhum projeto ainda. Clique em Novo projeto." />
+        </Grid>
+      </Grid>
     </Border>
   </Grid>
 </Window>

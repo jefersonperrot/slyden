@@ -72,10 +72,13 @@ Direção visual: tema escuro no estilo dos aplicativos Adobe. Maquete aprovada 
 - [x] Tela: topo, prévia, formato 16:9/9:16/1:1, controle de movimento, painel (Slide, Texto, Padrão, Exportar), linha do tempo com miniaturas
 - [x] Abrir pasta de fotos, escolher música, exportar MP4 com barra de progresso
 - [x] Ajuste por foto (efeito, intensidade, transição, ciclos, escurecer) e padrão global; textos (adicionar/remover/editar fonte, tamanho, alinhamento, posição, continuação)
-- [ ] **Conferir a tela visualmente** (só foi verificado que abre sem erro; layout e cores ainda não foram vistos)
+- [x] Revisão do usuário (11/11/2026): remover fotos (botão e tecla Delete; só tira do projeto), mover ◀ ▶, + Fotos (reincluir da pasta), tela de Projetos (novo, abrir, duplicar, excluir com confirmação), Salvar (botão e Ctrl+S; salva sozinho ao trocar de projeto ou fechar), cancelar exportação, botão "Criar capa nesta foto", correção do campo de texto que perdia o foco a cada letra
+- [x] Projetos em `%APPDATA%\Slyden\Projects\*.slyden` (`ProjectStore`); 133 testes
+- [ ] Conferir a tela visualmente depois dessas mudanças
+- [ ] Renomear projeto; botão para escolher a foto de capa e levá-la ao início
 - [ ] Onda da música com marcas de batida na linha do tempo
-- [ ] Reordenar e remover fotos; arrastar o texto na prévia
-- [ ] Salvar/abrir projeto (arquivo JSON + pasta) e Duplicar projeto
+- [ ] Arrastar o texto na prévia; arrastar fotos para reordenar
+- [ ] Incluir fotos de outras pastas (hoje só da pasta do projeto)
 - [ ] Reproduzir a prévia com música; aviso de rosto cortado na foto
 - [ ] Miniaturas mais rápidas (hoje decodifica a foto inteira; usar miniatura embutida/decodificação reduzida)
 - [ ] Exportar vários formatos de uma vez; otimizador de tamanho

@@ -59,7 +59,7 @@ public sealed class SlideshowConfig
     public SlideDefaults Default { get; set; } = new();
     public List<PhotoSpec> Photos { get; set; } = [];
 
-    private static readonly JsonSerializerOptions Json = CreateOptions();
+    internal static readonly JsonSerializerOptions Json = CreateOptions();
 
     private static JsonSerializerOptions CreateOptions() => new()
     {
