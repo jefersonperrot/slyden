@@ -177,6 +177,12 @@
                   <Slider Grid.Column="2" x:Name="DefaultScale" Minimum="30" Maximum="100" Value="100" />
                 </Grid>
                 <WrapPanel x:Name="DefaultBackgroundChips" />
+                <TextBlock Classes="dim" Text="Cor do fundo (quando o fundo é Cor)" />
+                <WrapPanel x:Name="ColorSwatches" />
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <Border x:Name="ColorPreview" Width="24" Height="24" CornerRadius="4" BorderBrush="#55555B" BorderThickness="1" Background="#FFFFFF" />
+                  <TextBox x:Name="BackgroundColorBox" Width="110" MaxLength="7" PlaceholderText="#RRGGBB" />
+                </StackPanel>
                 <Grid ColumnDefinitions="*,40,120">
                   <TextBlock Classes="dim" VerticalAlignment="Center" Text="Sombra da foto" />
                   <TextBlock Grid.Column="1" x:Name="DefaultShadowValue" Classes="hint" VerticalAlignment="Center" HorizontalAlignment="Right" Text="50%" />

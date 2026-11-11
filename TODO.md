@@ -89,6 +89,9 @@ Direção visual: tema escuro no estilo dos aplicativos Adobe. Maquete aprovada 
 - [x] Clique simples seleciona uma foto só; Ctrl/Shift para várias
 - [x] Sombra atrás da foto reduzida (`shadow`, controle "Sombra da foto" na aba Padrão, padrão 50%); atalho Espaço toca/para a prévia (165 testes)
 - [x] "Pasta do projeto" no Novo projeto: o `.slyden` é gravado na pasta escolhida (registrada em `projects.json` para aparecer na lista) e o vídeo exportado sugere essa pasta; 168 testes
+- [x] Fundo de cor lisa (opção "Cor" + amostras e campo #RRGGBB na aba Padrão; por foto escolhe "Cor" e usa a cor padrão); 170 testes
+- [x] Exportação mostra porcentagem, tempo restante estimado e tempo total ao terminar
+- [ ] Cor de fundo diferente por foto; seletor de cor completo
 - [ ] Abrir projeto `.slyden` de qualquer lugar (Arquivo > Abrir); mover/alterar a pasta de um projeto existente
 - [ ] Controles de desfoque e brilho do fundo no painel; sombra por foto
 - [ ] Renomear projeto; botão para escolher a foto de capa e levá-la ao início

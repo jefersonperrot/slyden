@@ -59,6 +59,26 @@ public class ScaleAndResolutionTests
     }
 
     [Fact]
+    public void Solid_color_background_fills_the_borders()
+    {
+        using var slide = new SlideRenderer(Solid(300, 200, SKColors.Red), Still, W, H, scale: 0.5,
+                                            blurBackground: false, fillColor: new SKColor(0x20, 0x40, 0x80));
+        using var frame = new SKBitmap(W, H);
+        using var canvas = new SKCanvas(frame);
+        slide.Draw(canvas, 0);
+        var edge = frame.GetPixel(3, 3);
+        Assert.Equal((0x20, 0x40, 0x80), (edge.Red, edge.Green, edge.Blue));
+    }
+
+    [Fact]
+    public void Config_rejects_an_invalid_background_color()
+    {
+        var cfg = new SlideshowConfig();
+        cfg.Default.BackgroundColor = "azul";
+        Assert.Throws<InvalidDataException>(cfg.Validate);
+    }
+
+    [Fact]
     public void Full_scale_fills_the_frame_with_the_photo()
     {
         using var frame = Draw(1, true);

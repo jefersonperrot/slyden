@@ -18,6 +18,7 @@ internal sealed class SlideRenderer : IDisposable
     private readonly double _dim;
     private readonly double _scale;
     private readonly double _shadow;
+    private readonly SKColor _fillColor;
     private readonly bool _needsBackground;
     private readonly IReadOnlyList<ActiveText> _texts;
     private readonly TextPainter? _painter;
@@ -30,15 +31,22 @@ internal sealed class SlideRenderer : IDisposable
         var motion = SlideResolver.MotionOf(slide, source.Width, source.Height, (double)layout.Width / layout.Height);
         return new SlideRenderer(source, motion, frameWidth, frameHeight, slide.Dim, texts, painter,
                                  slide.Scale, slide.Background == Config.BackgroundKind.Blur,
-                                 slide.BackgroundBlur, slide.BackgroundDim, slide.Shadow);
+                                 slide.BackgroundBlur, slide.BackgroundDim, slide.Shadow,
+                                 slide.Background == Config.BackgroundKind.Color ? ParseColor(slide.BackgroundColor) : null);
     }
 
+    private static SKColor ParseColor(string text) =>
+        Config.HexColor.TryParse(text, out var c) ? new SKColor(c.R, c.G, c.B) : SKColors.Black;
+
+    /// <param name="fillColor">Cor lisa do fundo (quando não é a foto desfocada); sem valor, preto.</param>
     /// <param name="scale">Tamanho da foto no quadro (0,3 a 1); abaixo de 1 sobra borda preenchida pelo fundo.</param>
     /// <param name="blurBackground">Fundo = a própria foto desfocada; falso = preto.</param>
     public SlideRenderer(SKBitmap source, Motion motion, int frameWidth, int frameHeight,
                          double dim = 0, IReadOnlyList<ActiveText>? texts = null, TextPainter? painter = null,
-                         double scale = 1, bool blurBackground = true, double backgroundBlur = 1, double backgroundDim = 0.1, double shadow = 0)
+                         double scale = 1, bool blurBackground = true, double backgroundBlur = 1, double backgroundDim = 0.1, double shadow = 0,
+                         SKColor? fillColor = null)
     {
+        _fillColor = fillColor ?? SKColors.Black;
         _shadow = Math.Clamp(shadow, 0, 1);
         _source = source;
         _motion = motion;
@@ -72,8 +80,8 @@ internal sealed class SlideRenderer : IDisposable
         if (_backgroundImage is not null) canvas.DrawImage(_backgroundImage, 0, 0, Linear);
         else if (_needsBackground)
         {
-            // preto opaco: sem isso, no fade o slide anterior apareceria através das bordas
-            using var black = new SKPaint { Color = SKColors.Black };
+            // cor opaca: sem isso, no fade o slide anterior apareceria através das bordas
+            using var black = new SKPaint { Color = _fillColor };
             canvas.DrawRect(SKRect.Create(_frameWidth, _frameHeight), black);
         }
 

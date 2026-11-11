@@ -10,7 +10,7 @@ public enum TransitionKind { Cut, Fade }
 public enum EffectOrder { Cycle, Random }
 
 /// <summary>O que aparece atrás da foto quando ela não ocupa o quadro todo.</summary>
-public enum BackgroundKind { Blur, Black }
+public enum BackgroundKind { Blur, Black, Color }
 
 /// <summary>Padrões que valem para todas as fotos, salvo exceção em <see cref="PhotoSpec"/>.</summary>
 public sealed class SlideDefaults
@@ -29,6 +29,8 @@ public sealed class SlideDefaults
     public BackgroundKind Background { get; set; } = BackgroundKind.Blur;
     /// <summary>Intensidade do desfoque do fundo (1 = padrão; 0,3 suave a 3 muito forte).</summary>
     public double BackgroundBlur { get; set; } = 1;
+    /// <summary>Cor do fundo quando o fundo é "color" ("#RRGGBB").</summary>
+    public string BackgroundColor { get; set; } = "#FFFFFF";
     /// <summary>Quanto o fundo desfocado é escurecido (0 = como a foto; 0,1 padrão; até 0,8).</summary>
     public double BackgroundDim { get; set; } = 0.1;
     /// <summary>Sombra atrás da foto quando ela é menor que o quadro (0 = sem sombra, 1 = forte).</summary>
@@ -132,6 +134,8 @@ public sealed class SlideshowConfig
         if (Default.Scale is < 0.3 or > 1) throw new InvalidDataException("default.scale deve estar entre 0,3 e 1.");
         if (Default.BackgroundBlur is < 0.3 or > 3) throw new InvalidDataException("default.background_blur deve estar entre 0,3 e 3.");
         if (Default.BackgroundDim is < 0 or > 0.8) throw new InvalidDataException("default.background_dim deve estar entre 0 e 0,8.");
+        if (!HexColor.TryParse(Default.BackgroundColor, out _))
+            throw new InvalidDataException($"default.background_color inválida: \"{Default.BackgroundColor}\" (use \"#RRGGBB\").");
         if (Default.Shadow is < 0 or > 1) throw new InvalidDataException("default.shadow deve estar entre 0 e 1.");
         if (SecondsPerPhoto is <= 0) throw new InvalidDataException("seconds_per_photo deve ser maior que zero.");
         if (FadeSeconds is <= 0) throw new InvalidDataException("fade_seconds deve ser maior que zero.");

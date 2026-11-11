@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Diagnostics;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
@@ -111,8 +112,28 @@ public partial class MainWindow : Window
         BuildChips(TransitionChips, ["Padrão", "Corte", "Fade"], multi: false, OnSlideTransition);
         BuildChips(DefaultEffectChips, Effects.Select(EffectName).ToArray(), multi: true, OnDefaultEffects);
         BuildChips(DefaultTransitionChips, ["Corte", "Fade"], multi: false, OnDefaultTransition);
-        BuildChips(BackgroundChips, ["Padrão", "Desfocado", "Preto"], multi: false, OnSlideBackground);
-        BuildChips(DefaultBackgroundChips, ["Desfocado", "Preto"], multi: false, OnDefaultBackground);
+        BuildChips(BackgroundChips, ["Padrão", "Desfocado", "Preto", "Cor"], multi: false, OnSlideBackground);
+        BuildChips(DefaultBackgroundChips, ["Desfocado", "Preto", "Cor"], multi: false, OnDefaultBackground);
+        foreach (var hex in new[] { "#FFFFFF", "#F3EBDD", "#C9C9CE", "#6B6B73", "#1B2A41", "#7A1F2B", "#D9A5A5", "#3E5C4B" })
+        {
+            var swatch = new Button
+            {
+                Width = 26, Height = 26, Margin = new Thickness(0, 0, 6, 6), Padding = new Thickness(0),
+                Background = new Avalonia.Media.SolidColorBrush(Avalonia.Media.Color.Parse(hex)),
+                BorderBrush = new Avalonia.Media.SolidColorBrush(Avalonia.Media.Color.Parse("#55555B")),
+                BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(4),
+                Tag = hex,
+            };
+            swatch.Click += (_, _) => SetBackgroundColor(hex);
+            ColorSwatches.Children.Add(swatch);
+        }
+        BackgroundColorBox.TextChanged += (_, _) =>
+        {
+            var text = BackgroundColorBox.Text?.Trim() ?? "";
+            if (!HexColor.TryParse(text, out var c) || text.Length != 7) return;
+            ColorPreview.Background = new Avalonia.Media.SolidColorBrush(Avalonia.Media.Color.FromRgb(c.R, c.G, c.B));
+            EditDefault(() => _cfg.Default.BackgroundColor = text.ToUpperInvariant());
+        };
         BuildChips(NewFormatChips, FormatLabels, multi: false, _ => UpdateNewSizeInfo());
         BuildChips(NewResolutionChips, ResolutionLabels, multi: false, _ => UpdateNewSizeInfo());
 
@@ -392,6 +413,9 @@ public partial class MainWindow : Window
         DefaultShadow.Value = _cfg.Default.Shadow * 100;
         DefaultShadowValue.Text = $"{DefaultShadow.Value:0}%";
         SetChips(DefaultBackgroundChips, [(int)_cfg.Default.Background]);
+        BackgroundColorBox.Text = _cfg.Default.BackgroundColor;
+        if (HexColor.TryParse(_cfg.Default.BackgroundColor, out var bg))
+            ColorPreview.Background = new Avalonia.Media.SolidColorBrush(Avalonia.Media.Color.FromRgb(bg.R, bg.G, bg.B));
         BeatsBox.SelectedIndex = _cfg.BeatsPerPhoto switch { 2 => 1, 4 => 2, 8 => 3, _ => 0 };
         SecondsBox.SelectedIndex = _cfg.SecondsPerPhoto switch { 5 => 1, 8 => 2, 10 => 3, _ => 0 };
         Fmt169.IsChecked = _cfg.Format == "16:9";
@@ -846,6 +870,14 @@ public partial class MainWindow : Window
     private void OnSlideTransition(int[] on) =>
         EditSlide(s => s.Transition = on[0] == 0 ? null : (TransitionKind)(on[0] - 1));
 
+    /// <summary>Escolher uma cor já seleciona o fundo "Cor" (senão a escolha não teria efeito visível).</summary>
+    private void SetBackgroundColor(string hex)
+    {
+        BackgroundColorBox.Text = hex; // dispara o TextChanged, que grava a cor
+        EditDefault(() => _cfg.Default.Background = BackgroundKind.Color);
+        SetChips(DefaultBackgroundChips, [(int)BackgroundKind.Color]);
+    }
+
     private void OnSlideBackground(int[] on) =>
         EditSlide(s => s.Background = on[0] == 0 ? null : (BackgroundKind)(on[0] - 1));
 
@@ -1063,6 +1095,15 @@ public partial class MainWindow : Window
         ExportStatus.Text = "Cancelando…";
     }
 
+    /// <summary>"45 s", "3 min 20 s" ou "1 h 05 min".</summary>
+    internal static string Remaining(double seconds)
+    {
+        int s = (int)Math.Ceiling(Math.Max(0, seconds));
+        if (s < 60) return $"{s} s";
+        if (s < 3600) return $"{s / 60} min {s % 60:00} s";
+        return $"{s / 3600} h {s % 3600 / 60:00} min";
+    }
+
     private async Task ExportAsync()
     {
         if (_exporting) return;
@@ -1093,17 +1134,22 @@ public partial class MainWindow : Window
         ExportStatus.Text = "Renderizando…";
 
         var request = new RenderRequest(_folder, output, _cfg.Clone(), _audio);
+        var watch = Stopwatch.StartNew();
         var progress = new Progress<RenderProgress>(p =>
         {
             if (token.IsCancellationRequested) return;
             ExportProgress.Value = p.Fraction * 100;
-            ExportStatus.Text = $"Renderizando… foto {p.Slide} de {p.Slides}";
+            string eta = "";
+            // só estima depois de um pouco de trabalho feito; antes disso a conta oscila demais
+            if (p.Fraction >= 0.03 && watch.Elapsed.TotalSeconds >= 5)
+                eta = $" · faltam ~{Remaining(watch.Elapsed.TotalSeconds * (1 - p.Fraction) / p.Fraction)}";
+            ExportStatus.Text = $"Renderizando… foto {p.Slide} de {p.Slides} ({p.Fraction * 100:0}%){eta}";
         });
 
         try
         {
             var summary = await Task.Run(() => SlideshowRenderer.Render(request, progress, token), token);
-            ExportStatus.Text = $"Pronto: {output} ({summary.DurationSeconds:0} s, {summary.Slides} fotos)." +
+            ExportStatus.Text = $"Pronto: {output} ({summary.DurationSeconds:0} s de vídeo, {summary.Slides} fotos, exportado em {Remaining(watch.Elapsed.TotalSeconds)})." +
                 (summary.Warnings.Count > 0 ? "\n" + string.Join("\n", summary.Warnings.Select(w => "Aviso: " + w)) : "");
         }
         catch (OperationCanceledException)
