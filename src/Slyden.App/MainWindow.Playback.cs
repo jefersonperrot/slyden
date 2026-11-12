@@ -164,6 +164,27 @@ public partial class MainWindow
         try { File.Delete(path); } catch (IOException) { } catch (UnauthorizedAccessException) { }
     }
 
+    private readonly Dictionary<string, double> _soundLength = []; // duração dos sons por cima (só a onda, sem análise de batidas)
+
+    /// <summary>Onda e duração de um arquivo curto (som por cima); não analisa batidas.</summary>
+    private async Task<(float[] Peaks, double Length)?> LoadSoundWaveAsync(string path)
+    {
+        if (_peaks.TryGetValue(path, out var cached) && _soundLength.TryGetValue(path, out var length)) return (cached, length);
+        if (!File.Exists(path)) return null;
+        try
+        {
+            var (peaks, len) = await Task.Run(() =>
+            {
+                var samples = AudioDecoder.DecodeMono(path);
+                return (Waveform.Peaks(samples, BeatAnalyzer.SampleRate), samples.Length / (double)BeatAnalyzer.SampleRate);
+            });
+            _peaks[path] = peaks;
+            _soundLength[path] = len;
+            return (peaks, len);
+        }
+        catch (Exception) { return null; }
+    }
+
     private async Task<BeatAnalysis> AnalyzeAsync(string path)
     {
         var stamp = File.GetLastWriteTimeUtc(path);

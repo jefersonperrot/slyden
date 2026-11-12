@@ -126,7 +126,8 @@ Direção visual: tema escuro no estilo dos aplicativos Adobe. Maquete aprovada 
 - [x] Botão ▶ Ouvir em cada música: toca só o trecho escolhido, com marcador amarelo andando na onda; para sozinho no fim, ao editar ou ao tocar a prévia
 - [x] Música por trecho: a partir da 2ª música, campo Entra na foto nº (0 = automático, proporcional ao tempo); com algum valor preenchido, as fotos de cada trecho se espalham só pela música dele e a troca de música cai na troca de foto (a info de cada música mostra otos X a Y); vale na prévia e na exportação; 210 testes. Nesse modo o ritmo é sempre ajustado à música (ignora batidas por foto fixas)
 - [x] Sons por cima da música (aba Padrão > Sons por cima): voz, efeitos etc.; cada som entra no início de uma foto (Entra na foto nº + espera), com corte (início/fim do trecho), volume e quanto a música abaixa (rampa suave de 0,35 s); a prévia toca o mesmo áudio montado da exportação (AudioMix); funciona também sem música; 215 testes
-- [ ] Sons por cima, depois: onda e botão Ouvir em cada som; mostrar na linha do tempo onde cada som toca; arrastar o som para outra foto
+- [x] Onda e botão ▶ Ouvir em cada som por cima (alças de início/fim, igual às músicas)
+- [ ] Sons por cima, depois: mostrar na linha do tempo onde cada som toca; arrastar o som para outra foto
 - [ ] **Testar as músicas na tela** (adicionar 2 ou 3, cortar início/fim, subir/descer, tocar a prévia, exportar)
 - [x] Onda do áudio em cada música (alças brancas arrastáveis para início e fim, grudam nas batidas; trecho fora do corte escurecido); 208 testes
 - [ ] Músicas, próximas etapas: onda da trilha inteira com marcas das fotos

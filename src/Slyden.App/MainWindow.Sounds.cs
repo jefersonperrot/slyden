@@ -41,6 +41,14 @@ public partial class MainWindow
         for (int i = 0; i < _cfg.Sounds.Count; i++) SoundList.Children.Add(BuildSoundRow(_cfg.Sounds[i]));
     }
 
+    private async Task FillSoundWaveAsync(WaveformView wave, OverlaySound sound)
+    {
+        wave.SetRange(sound.Start, sound.End ?? 0);
+        if (await LoadSoundWaveAsync(sound.Path) is not { } loaded) return;
+        wave.SetAudio(loaded.Peaks, [], loaded.Length);
+        wave.SetRange(sound.Start, sound.End ?? 0);
+    }
+
     private Control BuildSoundRow(OverlaySound sound)
     {
         bool exists = File.Exists(sound.Path);
@@ -63,14 +71,24 @@ public partial class MainWindow
             RebuildSoundList();
         };
 
+        var listen = new Button { Content = "▶ Ouvir", Padding = new Thickness(8, 2) };
+        listen.Classes.Add("btn");
+        ToolTip.SetTip(listen, "Toca só o trecho escolhido deste som");
+        var buttons = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 4, Children = { listen, remove } };
+
         var header = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto") };
         header.Children.Add(name);
-        Grid.SetColumn(remove, 1);
-        header.Children.Add(remove);
+        Grid.SetColumn(buttons, 1);
+        header.Children.Add(buttons);
+
+        var wave = new WaveformView { Accent = Color.Parse("#E5605A"), Height = WaveformView.ViewHeight };
+        ToolTip.SetTip(wave, "Arraste as alças brancas para escolher onde o som começa e termina.");
+        listen.Click += (_, _) => ToggleListen(sound.Path, sound.Start, sound.End, wave, listen);
+        _ = FillSoundWaveAsync(wave, sound);
 
         var fields = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*"), ColumnSpacing = 8, RowSpacing = 6 };
         int row = 0;
-        void Add(string label, string tip, double value, double min, double max, double step, string format, Action<double> apply)
+        NumericUpDown Add(string label, string tip, double value, double min, double max, double step, string format, Action<double> apply)
         {
             fields.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
             var text = new AvaloniaText { Text = label, VerticalAlignment = VerticalAlignment.Center };
@@ -93,18 +111,42 @@ public partial class MainWindow
             fields.Children.Add(text);
             fields.Children.Add(box);
             row++;
+            return box;
         }
 
         Add("Entra na foto nº", "O som começa quando esta foto aparece.", sound.Photo, 1, 9999, 1, "0", v => sound.Photo = (int)v);
         Add("Espera (s)", "Atraso depois do início da foto.", sound.Delay, 0, 600, 0.5, "0.##", v => sound.Delay = v);
-        Add("Início do trecho (s)", "De onde do arquivo o som começa a tocar.", sound.Start, 0, 3600, 1, "0.##", v => sound.Start = v);
-        Add("Fim do trecho (s)", "Onde o som termina. 0 = até o fim do arquivo.", sound.End ?? 0, 0, 3600, 1, "0.##",
-            v => sound.End = v > sound.Start ? v : null);
+        var startBox = Add("Início do trecho (s)", "De onde do arquivo o som começa a tocar.", sound.Start, 0, 3600, 1, "0.##", v =>
+        {
+            sound.Start = v;
+            wave.SetRange(sound.Start, sound.End ?? 0);
+        });
+        var endBox = Add("Fim do trecho (s)", "Onde o som termina. 0 = até o fim do arquivo.", sound.End ?? 0, 0, 3600, 1, "0.##", v =>
+        {
+            sound.End = v > sound.Start ? v : null;
+            wave.SetRange(sound.Start, sound.End ?? 0);
+        });
+        wave.Dragging += (s, e) =>
+        {
+            bool was = _loading;
+            _loading = true;
+            startBox.Value = (decimal)Math.Round(s, 2);
+            endBox.Value = e >= wave.Duration - 0.05 ? 0 : (decimal)Math.Round(e, 2);
+            _loading = was;
+        };
+        wave.Committed += (s, e) =>
+        {
+            if (_loading || _project is null) return;
+            sound.Start = s;
+            sound.End = e >= wave.Duration - 0.05 ? null : e;
+            MarkDirty();
+        };
         Add("Volume do som (%)", "100 = como está no arquivo.", sound.Volume * 100, 0, 400, 5, "0", v => sound.Volume = v / 100);
         Add("Música fica em (%)", "Volume da música enquanto o som toca. 100 = não abaixa.", sound.Duck * 100, 0, 100, 5, "0", v => sound.Duck = v / 100);
 
         var body = new StackPanel { Spacing = 6 };
         body.Children.Add(header);
+        body.Children.Add(wave);
         body.Children.Add(fields);
         return new Border
         {

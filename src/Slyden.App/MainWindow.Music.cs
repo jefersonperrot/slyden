@@ -279,18 +279,22 @@ public partial class MainWindow
     private double _listenFrom, _listenLength;
     private Avalonia.Threading.DispatcherTimer? _listenTimer;
 
-    private void ToggleListen(MusicTrack track, WaveformView wave, Button button)
+    private void ToggleListen(MusicTrack track, WaveformView wave, Button button) =>
+        ToggleListen(track.Path, track.Start, track.End, wave, button);
+
+    /// <summary>Toca só o trecho mostrado na onda (ou, se a onda ainda não carregou, o início/fim guardados).</summary>
+    private void ToggleListen(string path, double fallbackStart, double? fallbackEnd, WaveformView wave, Button button)
     {
         bool same = _listenButton == button;
         StopListening();
         if (same) return;
-        if (!File.Exists(track.Path)) { MusicSummary.Text = "⚠ Música não encontrada: " + track.Path; return; }
+        if (!File.Exists(path)) { MusicSummary.Text = "⚠ Arquivo não encontrado: " + path; return; }
 
         StopPlayback(refresh: true); // a prévia do vídeo e a escuta não tocam juntas
-        double from = wave.Duration > 0 ? wave.Start : track.Start;
-        double to = wave.Duration > 0 ? wave.End : (track.End ?? from + 30);
+        double from = wave.Duration > 0 ? wave.Start : fallbackStart;
+        double to = wave.Duration > 0 ? wave.End : (fallbackEnd ?? from + 30);
         var player = new AudioPlayer();
-        if (!player.Start(track.Path, from, out var error))
+        if (!player.Start(path, from, out var error))
         {
             player.Dispose();
             MusicSummary.Text = "Não foi possível tocar: " + error;
