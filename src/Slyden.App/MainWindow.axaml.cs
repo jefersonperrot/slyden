@@ -1017,17 +1017,15 @@ public partial class MainWindow : Window
         spec.Dim ??= 0.4;
         if (spec.Texts is null or { Count: 0 })
         {
-            // se o usuário definiu uma fonte padrão, a capa inteira usa ela; senão, uma combinação de exemplo
-            string? own = ActivePreset.TextStyle?.Font;
-            // os textos entram em sequência, um depois do outro, com fade suave
+            // capa de exemplo: três textos centralizados, um abaixo do outro, entrando em sequência com fade suave
+            // (se o preset tem uma fonte padrão, a capa inteira usa ela)
+            string font = ActivePreset.TextStyle?.Font ?? "Georgia";
             spec.Texts =
             [
-                new SlideText { Text = "Wedding day", Font = own ?? "Segoe Script", Size = 0.085, Align = Slyden.Core.Config.TextAlign.Left,
-                                X = 0.08, Y = 0.30, Delay = 0.3, FadeIn = 1.0, FadeOut = 0.8 },
-                new SlideText { Text = "Maria e João", Font = own ?? "Georgia", Bold = true, Size = 0.12, Color = "#FFF1CC", Y = 0.52,
+                new SlideText { Text = "Subtítulo", Font = font, Size = 0.07, Y = 0.40, Delay = 0.3, FadeIn = 1.0, FadeOut = 0.8 },
+                new SlideText { Text = "Título", Font = font, Bold = true, Size = 0.12, Color = "#FFF1CC", Y = 0.54,
                                 Span = 2, Delay = 0.9, FadeIn = 1.2, FadeOut = 0.8 },
-                new SlideText { Text = DateTime.Today.ToString("dd/MM/yyyy"), Font = own ?? "Century Gothic", Size = 0.04,
-                                Align = Slyden.Core.Config.TextAlign.Right, X = 0.92, Y = 0.90, Delay = 1.5, FadeIn = 1.0, FadeOut = 0.8 },
+                new SlideText { Text = "Texto", Font = font, Size = 0.04, Y = 0.68, Delay = 1.5, FadeIn = 1.0, FadeOut = 0.8 },
             ];
         }
         _items[_selected].RefreshTags();
