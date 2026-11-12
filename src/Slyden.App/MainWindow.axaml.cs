@@ -27,6 +27,9 @@ public abstract class Notifying : INotifyPropertyChanged
 public sealed class SlideItem(PhotoSpec spec) : Notifying
 {
     private Bitmap? _thumb;
+    private double _cardWidth = 150;
+    /// <summary>Largura do cartão na linha do tempo; com música é proporcional ao tempo da foto.</summary>
+    public double CardWidth { get => _cardWidth; set { _cardWidth = value; Changed(nameof(CardWidth)); } }
     public PhotoSpec Spec { get; } = spec;
     public string Name => Path.GetFileNameWithoutExtension(Spec.File);
     public Bitmap? Thumb { get => _thumb; set { _thumb = value; Changed(nameof(Thumb)); } }
@@ -183,6 +186,7 @@ public partial class MainWindow : Window
         InitSlideTiming();
         InitMusic();
         InitSounds();
+        InitTimelineSync();
         UpdateEditorActions();
         ProjectList.SizeChanged += (_, _) => UpdateCardWidth();
         HomeSearch.TextChanged += (_, _) => ApplyHomeFilter();
@@ -540,6 +544,8 @@ public partial class MainWindow : Window
         _folder = project.PhotosFolder;
         _dirty = false;
         DropMusicCache();
+        _pps = 0;
+        _layoutBounds = [];
         ClearCache();
 
         _loading = true;

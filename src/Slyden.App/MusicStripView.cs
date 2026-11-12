@@ -8,8 +8,10 @@ using Slyden.Core.Audio;
 namespace Slyden.App;
 
 /// <summary>
-/// Faixa da trilha de música (a trilha inteira numa largura só): onda, batidas e a divisão entre as músicas.
-/// Clicar numa música avisa quem usa a faixa (a tela vai para a lista de músicas).
+/// Faixa da trilha de música: onda, batidas, divisão entre as músicas e as trocas de foto.
+/// Com <see cref="PixelsPerSecond"/> definido ela usa a mesma escala e a mesma rolagem da linha do tempo das fotos
+/// (cada foto fica exatamente sob a sua parte da música); sem ele, mostra a trilha inteira numa largura só.
+/// Clicar numa música avisa quem usa a faixa; clicar numa marca de troca seleciona a foto.
 /// </summary>
 public sealed class MusicStripView : Control
 {
@@ -20,9 +22,9 @@ public sealed class MusicStripView : Control
     private double[] _beats = [];
     private double _duration;
     private int _hover = -1;
-
     private double[] _photoStarts = [];
     private int _selectedPhoto = -1;
+    private double _pps, _origin, _scrollX;
 
     /// <summary>Índice da música clicada (0 = primeira).</summary>
     public event Action<int>? TrackClicked;
@@ -36,16 +38,41 @@ public sealed class MusicStripView : Control
         set { _selectedPhoto = value; InvalidateVisual(); }
     }
 
+    /// <summary>Pixels por segundo da escala compartilhada com a linha do tempo das fotos; 0 = trilha inteira na largura.</summary>
+    public double PixelsPerSecond
+    {
+        get => _pps;
+        set { _pps = Math.Max(0, value); InvalidateVisual(); }
+    }
+
+    /// <summary>Instante (s) que fica no pixel 0 da escala; negativo quando há capa antes da música.</summary>
+    public double OriginSeconds
+    {
+        get => _origin;
+        set { _origin = value; InvalidateVisual(); }
+    }
+
+    /// <summary>Rolagem horizontal da linha do tempo das fotos, em pixels.</summary>
+    public double ScrollX
+    {
+        get => _scrollX;
+        set { _scrollX = Math.Max(0, value); InvalidateVisual(); }
+    }
+
+    /// <summary>Duração da trilha (s).</summary>
+    public double Duration => _duration;
+
+    public MusicStripView()
+    {
+        Cursor = new Cursor(StandardCursorType.Hand);
+        ClipToBounds = true;
+    }
+
     /// <summary>Instante da trilha (s) em que cada foto aparece, na ordem das fotos.</summary>
     public void SetPhotos(IReadOnlyList<double> starts)
     {
         _photoStarts = starts.ToArray();
         InvalidateVisual();
-    }
-
-    public MusicStripView()
-    {
-        Cursor = new Cursor(StandardCursorType.Hand);
     }
 
     public void Set(MusicBed bed, Func<string, float[]?> peaksOf, IReadOnlyList<Color> colors)
@@ -79,31 +106,53 @@ public sealed class MusicStripView : Control
     protected override Size MeasureOverride(Size availableSize) =>
         new(double.IsInfinity(availableSize.Width) ? 300 : availableSize.Width, 48);
 
-    private double XOf(double seconds) => _duration <= 0 ? 0 : seconds / _duration * Bounds.Width;
+    // x (pixels na tela) <-> t (segundos da trilha)
+    private double Scale => _pps > 0 ? _pps : (_duration <= 0 ? 1 : Bounds.Width / _duration);
+    private double Origin => _pps > 0 ? _origin : 0;
+    private double Scroll => _pps > 0 ? _scrollX : 0;
+    private double XOf(double seconds) => (seconds - Origin) * Scale - Scroll;
+    private double TimeAt(double x) => (x + Scroll) / Scale + Origin;
 
     public override void Render(DrawingContext context)
     {
         double w = Bounds.Width, h = Bounds.Height;
         context.DrawRectangle(new SolidColorBrush(Color.Parse("#17171A")), null, new Rect(0, 0, w, h), 4, 4);
         if (_duration <= 0 || _blocks.Count == 0 || w < 2) return;
+        double Clip(double x) => Math.Clamp(x, 0, w);
+
+        // capa antes da música (escala compartilhada): faixa vazia no começo
+        if (_pps > 0 && _origin < 0)
+        {
+            double x0 = Clip(XOf(_origin)), x1 = Clip(XOf(0));
+            if (x1 > x0)
+            {
+                context.DrawRectangle(new SolidColorBrush(Colors.White, 0.05), null, new Rect(x0, 0, x1 - x0, h));
+                if (x1 - x0 > 40)
+                    context.DrawText(new FormattedText("capa (sem música)", CultureInfo.CurrentCulture, FlowDirection.LeftToRight, Typeface.Default, 10,
+                                                       new SolidColorBrush(Colors.White, 0.6)) { MaxTextWidth = x1 - x0 - 8, MaxLineCount = 1 }, new Point(x0 + 5, 3));
+            }
+        }
 
         // fundo de cada música, mais forte na que está sob o mouse
         for (int i = 0; i < _blocks.Count; i++)
         {
             var b = _blocks[i];
-            var fill = new SolidColorBrush(b.Color, i == _hover ? 0.38 : 0.22);
-            context.DrawRectangle(fill, null, new Rect(XOf(b.Start), 0, Math.Max(1, XOf(b.End) - XOf(b.Start)), h));
+            double x0 = Clip(XOf(b.Start)), x1 = Clip(XOf(b.End));
+            if (x1 <= x0) continue;
+            context.DrawRectangle(new SolidColorBrush(b.Color, i == _hover ? 0.38 : 0.22), null, new Rect(x0, 0, Math.Max(1, x1 - x0), h));
         }
 
-        // onda
+        // onda (uma coluna por pixel visível)
         int columns = (int)w;
         for (int x = 0; x < columns; x++)
         {
-            double t = (x + 0.5) / columns * _duration;
-            int i0 = (int)(x / (double)columns * _duration * Waveform.PerSecond);
-            int i1 = Math.Max(i0 + 1, (int)((x + 1) / (double)columns * _duration * Waveform.PerSecond));
+            double t = TimeAt(x + 0.5);
+            if (t < 0 || t >= _duration) continue;
+            double perPixel = 1 / Scale;
+            int i0 = (int)(TimeAt(x) * Waveform.PerSecond);
+            int i1 = Math.Max(i0 + 1, (int)((TimeAt(x) + perPixel) * Waveform.PerSecond));
             float peak = 0;
-            for (int i = i0; i < Math.Min(i1, _peaks.Length); i++) peak = Math.Max(peak, _peaks[i]);
+            for (int i = Math.Max(0, i0); i < Math.Min(i1, _peaks.Length); i++) peak = Math.Max(peak, _peaks[i]);
             var color = _blocks.FirstOrDefault(b => t >= b.Start && t < b.End)?.Color ?? _blocks[^1].Color;
             double bh = Math.Max(1, peak * (h - 18));
             context.DrawRectangle(new SolidColorBrush(color, 0.9), null, new Rect(x, 14 + (h - 14 - bh) / 2, 1, bh));
@@ -112,24 +161,31 @@ public sealed class MusicStripView : Control
         // batidas: marcas finas embaixo (se estiverem muito juntas, mostra só algumas)
         if (_beats.Length > 1)
         {
-            double spacing = w * (_beats[^1] - _beats[0]) / _duration / (_beats.Length - 1);
+            double spacing = Scale * (_beats[^1] - _beats[0]) / (_beats.Length - 1);
             int step = Math.Max(1, (int)Math.Ceiling(3.0 / Math.Max(spacing, 0.01)));
             var tick = new SolidColorBrush(Colors.White, 0.55);
             for (int i = 0; i < _beats.Length; i += step)
-                context.DrawRectangle(tick, null, new Rect(Math.Clamp(XOf(_beats[i]), 0, w - 1), h - 7, 1, 7));
+            {
+                double x = XOf(_beats[i]);
+                if (x < -1 || x > w) continue;
+                context.DrawRectangle(tick, null, new Rect(x, h - 7, 1, 7));
+            }
         }
 
         // trocas de foto: uma linha em cada início de foto (a selecionada em branco), com o número quando há espaço
         if (_photoStarts.Length > 0)
         {
-            double spacing = w * (_photoStarts[^1] - _photoStarts[0]) / _duration / Math.Max(1, _photoStarts.Length - 1);
+            double spacing = _photoStarts.Length > 1
+                ? Scale * (_photoStarts[^1] - _photoStarts[0]) / (_photoStarts.Length - 1) : double.MaxValue;
             var line = new SolidColorBrush(Color.Parse("#FFD24A"), 0.85);
             var number = new SolidColorBrush(Color.Parse("#FFD24A"));
             for (int i = 0; i < _photoStarts.Length; i++)
             {
-                double x = Math.Clamp(XOf(_photoStarts[i]), 0, w - 2);
+                double x = XOf(_photoStarts[i]);
                 bool selected = i == _selectedPhoto;
-                context.DrawRectangle(selected ? new SolidColorBrush(Colors.White) : line, null, new Rect(x, 0, selected ? 2.5 : 1, h));
+                if (x < -2 || x > w + 40) continue;
+                if (x <= w)
+                    context.DrawRectangle(selected ? new SolidColorBrush(Colors.White) : line, null, new Rect(x, 0, selected ? 2.5 : 1, h));
                 if (spacing >= 24 || selected)
                 {
                     var label = new FormattedText($"{i + 1}", CultureInfo.CurrentCulture, FlowDirection.LeftToRight, Typeface.Default, 10,
@@ -145,23 +201,24 @@ public sealed class MusicStripView : Control
         {
             var b = _blocks[i];
             double x0 = XOf(b.Start), x1 = XOf(b.End);
-            if (i > 0) context.DrawRectangle(white, null, new Rect(Math.Clamp(x0 - 1, 0, w - 2), 0, 2, h));
-            double room = x1 - x0 - 8;
+            if (x1 < 0 || x0 > w) continue;
+            if (i > 0 && x0 >= 0) context.DrawRectangle(white, null, new Rect(x0 - 1, 0, 2, h));
+            double left = Math.Max(x0, 0), room = Math.Min(x1, w) - left - 8; // o nome acompanha a rolagem
             if (room < 14) continue;
             var text = new FormattedText($"{i + 1} · {b.Name}", CultureInfo.CurrentCulture, FlowDirection.LeftToRight,
                                          Typeface.Default, 11, white)
             { MaxTextWidth = room, MaxLineCount = 1, Trimming = TextTrimming.CharacterEllipsis };
-            context.DrawText(text, new Point(x0 + 5, 1));
+            context.DrawText(text, new Point(left + 5, 1));
         }
     }
 
     private int BlockAt(double x)
     {
         if (_duration <= 0) return -1;
-        double t = x / Math.Max(1, Bounds.Width) * _duration;
+        double t = TimeAt(x);
         for (int i = 0; i < _blocks.Count; i++)
             if (t >= _blocks[i].Start && t < _blocks[i].End) return i;
-        return _blocks.Count - 1;
+        return t < 0 ? -1 : _blocks.Count - 1;
     }
 
     /// <summary>Marca de troca de foto perto do ponteiro (a até 5 px), ou -1.</summary>

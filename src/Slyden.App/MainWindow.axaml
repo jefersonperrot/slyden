@@ -388,6 +388,12 @@
           <TextBlock FontWeight="Medium" Text="Linha do tempo" VerticalAlignment="Center" />
           <TextBlock Grid.Column="1" x:Name="TimelineInfo" Classes="hint" VerticalAlignment="Center" Text="" />
           <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6">
+            <StackPanel x:Name="ZoomBox" Orientation="Horizontal" Spacing="6" IsVisible="False" Margin="0,0,10,0">
+              <TextBlock Classes="hint" VerticalAlignment="Center" Text="Zoom" />
+              <Slider x:Name="TimelineZoom" Width="110" Minimum="0.5" Maximum="200" Value="60" VerticalAlignment="Center" />
+              <Button x:Name="ZoomFitButton" Classes="btn" Padding="8,3" Content="Ajustar"
+                      ToolTip.Tip="Mostra a trilha inteira de uma vez; as fotos ficam do tamanho do tempo que ocupam" />
+            </StackPanel>
             <Button x:Name="MoveLeftButton" Classes="btn" Padding="8,3" Content="◀" ToolTip.Tip="Mover para antes" />
             <Button x:Name="MoveRightButton" Classes="btn" Padding="8,3" Content="▶" ToolTip.Tip="Mover para depois" />
             <Button x:Name="SelectAllButton" Classes="btn" Padding="10,3" Content="Selecionar todas"
@@ -406,7 +412,7 @@
           </ListBox.ItemsPanel>
           <ListBox.ItemTemplate>
             <DataTemplate>
-              <Grid Width="150" Height="104" Background="#2A2A30">
+              <Grid Width="{Binding CardWidth}" Height="104" Background="#2A2A30">
                 <Image Source="{Binding Thumb}" Stretch="UniformToFill" />
                 <Border Background="#99000000" VerticalAlignment="Bottom" Padding="6,3">
                   <Grid ColumnDefinitions="*,Auto">

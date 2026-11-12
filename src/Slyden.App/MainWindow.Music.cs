@@ -66,23 +66,24 @@ public partial class MainWindow
         int version = ++_marksVersion;
         if (_music is not { } music || _cfg.Tracks.Count == 0 || _cfg.Photos.Count == 0)
         {
+            _layoutBounds = [];
             MusicStrip.SetPhotos([]);
+            ApplyTimelineLayout();
             return;
         }
         var snapshot = _cfg.Clone();
         var analysis = music.Bed.Analysis;
-        double[] starts;
+        double[] bounds;
         try
         {
-            starts = await Task.Run(() =>
-            {
-                var plan = Slyden.Core.Render.SlideshowPlan.Build(snapshot, PlayFps, analysis);
-                // com capa antes da música, o primeiro instante é "virtual" (antes da música): a capa fica no começo da faixa
-                return Enumerable.Range(0, plan.Slides.Count).Select(i => i == 0 && plan.IntroSeconds > 0 ? 0 : plan.Boundaries[i]).ToArray();
-            });
+            // instantes em que cada foto começa (mais o fim da última); com capa, o primeiro é "virtual" (antes da música, pode ser negativo)
+            bounds = await Task.Run(() => Slyden.Core.Render.SlideshowPlan.Build(snapshot, PlayFps, analysis).Boundaries.ToArray());
         }
-        catch (Exception) { starts = []; } // música curta demais ou sem batidas: sem marcas
-        if (version == _marksVersion) MusicStrip.SetPhotos(starts);
+        catch (Exception) { bounds = []; } // música curta demais ou sem batidas: sem marcas
+        if (version != _marksVersion) return;
+        _layoutBounds = bounds;
+        MusicStrip.SetPhotos(bounds.Length > 1 ? bounds.Take(bounds.Length - 1).ToArray() : []);
+        ApplyTimelineLayout(); // as fotos da linha do tempo passam a ter a largura do tempo que ocupam
     }
 
     /// <summary>Clique na faixa da trilha: abre a aba Padrão, rola até a música clicada e a destaca por um instante.</summary>
@@ -208,7 +209,12 @@ public partial class MainWindow
         MusicTimeline.Children.Clear();
         MusicTimeline.ColumnDefinitions.Clear();
         MusicTimeline.IsVisible = false;
-        if (_cfg.Tracks.Count == 0) MusicStrip.IsVisible = false;
+        if (_cfg.Tracks.Count == 0)
+        {
+            MusicStrip.IsVisible = false;
+            _layoutBounds = [];
+            ApplyTimelineLayout(); // sem música, as fotos voltam ao tamanho normal
+        }
         MusicSummary.Text = _cfg.Tracks.Count == 0 ? "Nenhuma música. Clique em + Adicionar música (ou use o menu Projeto)." : "";
 
         for (int i = 0; i < _cfg.Tracks.Count; i++)
