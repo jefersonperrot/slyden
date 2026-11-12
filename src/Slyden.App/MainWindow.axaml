@@ -445,7 +445,7 @@
             </ListBox.ItemsPanel>
             <ListBox.DataTemplates>
               <DataTemplate DataType="local:NewProjectCard">
-                <Button Width="280" Height="270" Classes="btn" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
+                <Button Width="280" Height="295" VerticalAlignment="Top" Classes="btn" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
                         Click="OnNewCardClick" BorderBrush="#55555B">
                   <StackPanel Spacing="6" HorizontalAlignment="Center">
                     <TextBlock Text="+" FontSize="44" HorizontalAlignment="Center" Foreground="#3B8BFF" />
