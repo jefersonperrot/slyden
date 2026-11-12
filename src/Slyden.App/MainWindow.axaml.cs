@@ -53,12 +53,18 @@ public sealed class TextItem(SlideText text) : Notifying
 }
 
 /// <summary>Primeiro cartão da grade de projetos: cria um projeto novo.</summary>
-public sealed class NewProjectCard;
+public sealed class NewProjectCard : Notifying
+{
+    private double _cardWidth = 280;
+    public double CardWidth { get => _cardWidth; set { _cardWidth = value; Changed(nameof(CardWidth)); } }
+}
 
 public sealed class ProjectItem(ProjectEntry entry) : Notifying
 {
     private bool _confirming;
     private Bitmap? _thumb;
+    private double _cardWidth = 280;
+    public double CardWidth { get => _cardWidth; set { _cardWidth = value; Changed(nameof(CardWidth)); } }
     public Bitmap? Thumb { get => _thumb; set { _thumb = value; Changed(nameof(Thumb)); } }
     public string PresetName { get; init; } = "";
     public string Edited => $"editado em {Entry.Project.Modified.ToLocalTime():dd/MM/yyyy HH:mm}" +
@@ -155,6 +161,7 @@ public partial class MainWindow : Window
         PlayButton.Click += async (_, _) => await TogglePlayAsync();
         InitMenu();
         UpdateEditorActions();
+        ProjectList.SizeChanged += (_, _) => UpdateCardWidth();
         HomeSearch.TextChanged += (_, _) => ApplyHomeFilter();
         HomeSort.SelectionChanged += (_, _) => { if (IsLoaded) ApplyHomeFilter(); };
         HomeView.PropertyChanged += (_, e) => { if (e.Property == IsVisibleProperty) UpdateEditorActions(); };
@@ -329,6 +336,7 @@ public partial class MainWindow : Window
         var cards = new List<object> { new NewProjectCard() };
         cards.AddRange(shown);
         ProjectList.ItemsSource = cards;
+        UpdateCardWidth();
         NoProjects.IsVisible = shown.Count() == 0;
         NoProjects.Text = _homeAll.Count == 0 ? "Nenhum projeto ainda. Clique em Novo projeto." : "Nenhum projeto com esse nome.";
     }
@@ -353,6 +361,21 @@ public partial class MainWindow : Window
             if (thumb is null) continue;
             _homeThumbs[ThumbKey(item.Entry)] = thumb;
             item.Thumb = thumb;
+        }
+    }
+
+    /// <summary>Distribui as colunas de modo que a grade vá de uma borda à outra (alinhada ao título e ao botão).</summary>
+    private void UpdateCardWidth()
+    {
+        double available = ProjectList.Bounds.Width; // a lista avança 16 px para a direita para compensar a margem do último cartão
+        if (available <= 0) return;
+        const double minWidth = 280, gap = 16;
+        int columns = Math.Max(1, (int)(available / (minWidth + gap)));
+        double width = Math.Floor(available / columns - gap);
+        foreach (var card in ProjectList.ItemsSource?.OfType<object>() ?? [])
+        {
+            if (card is ProjectItem p) p.CardWidth = width;
+            else if (card is NewProjectCard n) n.CardWidth = width;
         }
     }
 
