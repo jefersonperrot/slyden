@@ -486,6 +486,9 @@ public partial class MainWindow : Window
             case "open":
                 OpenProject(item.Entry.Project);
                 break;
+            case "rename":
+                _ = RenameProjectAsync(item.Entry.Project);
+                break;
             case "duplicate":
                 _store.DuplicateFile(item.Entry.Path);
                 RefreshProjectList();

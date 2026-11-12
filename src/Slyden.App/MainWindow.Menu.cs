@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Layout;
+using Slyden.Core.Config;
 
 namespace Slyden.App;
 
@@ -16,6 +17,7 @@ public partial class MainWindow
         MenuExit.Click += (_, _) => Close(); // OnClosing cuida de salvar
         MenuUndo.Click += (_, _) => Undo();
         MenuRedo.Click += (_, _) => Redo();
+        MenuRename.Click += async (_, _) => { if (_project is not null) await RenameProjectAsync(_project); };
         MenuMusic.Click += async (_, _) => await ChooseMusicAsync();
         MenuRemoveMusic.Click += (_, _) => RemoveMusic();
         MenuSettings.Click += (_, _) => { if (SettingsView.IsVisible) CloseSettings(); else ShowSettings(); };
@@ -39,6 +41,7 @@ public partial class MainWindow
         MenuExport.IsEnabled = editor;
         MenuUndo.IsEnabled = editor && _undo.Count > 0;
         MenuRedo.IsEnabled = editor && _redo.Count > 0;
+        MenuRename.IsEnabled = editor;
         MenuMusic.IsEnabled = editor;
         MenuRemoveMusic.IsEnabled = editor && _audio is not null;
     }
@@ -66,5 +69,63 @@ public partial class MainWindow
         };
         ok.Click += (_, _) => dialog.Close();
         await dialog.ShowDialog(this);
+    }
+
+    /// <summary>Pede o novo nome e grava; vale para o projeto aberto e para os da lista.</summary>
+    private async Task RenameProjectAsync(ProjectFile project)
+    {
+        string? name = await PromptAsync("Renomear projeto", "Novo nome do projeto:", project.Name);
+        name = name?.Trim();
+        if (string.IsNullOrEmpty(name) || name == project.Name) return;
+        try
+        {
+            if (_project is not null && _project.Id == project.Id)
+            {
+                _project.Name = name;
+                Save(); // grava o projeto aberto inteiro, para um salvamento seguinte não trazer o nome antigo de volta
+            }
+            else
+            {
+                project.Name = name;
+                _store.Save(project);
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            HomeMessage.Text = "Não consegui renomear: " + ex.Message;
+            return;
+        }
+        UpdateSaveState();
+        if (HomeView.IsVisible) RefreshProjectList();
+    }
+
+    /// <summary>Janelinha com um campo de texto; devolve o texto, ou nulo se o usuário cancelar.</summary>
+    private async Task<string?> PromptAsync(string title, string label, string initial)
+    {
+        var box = new TextBox { Text = initial, MinWidth = 340 };
+        var ok = new Button { Content = "OK", Padding = new Thickness(20, 5), IsDefault = true };
+        var cancel = new Button { Content = "Cancelar", Padding = new Thickness(16, 5), IsCancel = true };
+        var dialog = new Window
+        {
+            Title = title, SizeToContent = SizeToContent.WidthAndHeight, CanResize = false,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            Content = new StackPanel
+            {
+                Margin = new Thickness(24), Spacing = 12,
+                Children =
+                {
+                    new Avalonia.Controls.TextBlock { Text = label }, box,
+                    new StackPanel
+                    {
+                        Orientation = Orientation.Horizontal, Spacing = 8, HorizontalAlignment = HorizontalAlignment.Right,
+                        Children = { cancel, ok },
+                    },
+                },
+            },
+        };
+        ok.Click += (_, _) => dialog.Close(box.Text);
+        cancel.Click += (_, _) => dialog.Close(null);
+        dialog.Opened += (_, _) => { box.Focus(); box.SelectAll(); };
+        return await dialog.ShowDialog<string?>(this);
     }
 }

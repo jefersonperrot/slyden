@@ -28,6 +28,8 @@
               <MenuItem x:Name="MenuRedo" Header="_Refazer" InputGesture="Ctrl+Y" />
             </MenuItem>
             <MenuItem Header="_Projeto" x:Name="MenuProject">
+              <MenuItem x:Name="MenuRename" Header="Re_nomear projeto…" />
+              <Separator />
               <MenuItem x:Name="MenuMusic" Header="Escolher _música…" />
               <MenuItem x:Name="MenuRemoveMusic" Header="_Remover música" />
               <Separator />
@@ -466,7 +468,10 @@
                       <Image Source="{Binding Thumb}" Stretch="UniformToFill" />
                     </Border>
                     <StackPanel Margin="12,10,12,12" Spacing="2">
-                      <TextBlock Text="{Binding Name}" FontSize="15" FontWeight="Medium" TextTrimming="CharacterEllipsis" />
+                      <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Text="{Binding Name}" FontSize="15" FontWeight="Medium" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                        <Button Grid.Column="1" Classes="btn" Content="✎" Padding="7,1" Tag="rename" Click="OnProjectAction" ToolTip.Tip="Renomear o projeto" />
+                      </Grid>
                       <TextBlock Text="{Binding Details}" Classes="hint" />
                       <TextBlock Text="{Binding Edited}" Classes="hint" />
                       <TextBlock Text="{Binding Folder}" Classes="hint" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Folder}" />
