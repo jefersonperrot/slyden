@@ -115,6 +115,7 @@ Direção visual: tema escuro no estilo dos aplicativos Adobe. Maquete aprovada 
 - [x] Barra de menus (Arquivo, Editar, Projeto, Ajuda com atalhos e Sobre); o topo ficou só com Desfazer/Refazer/Salvar/Exportar
 - [x] Tela de projetos em grade de cartões com miniatura (1ª foto), cartão + Novo projeto, busca e ordenação; botões Desfazer/Salvar/Exportar só aparecem com um projeto aberto
 - [ ] Tela de projetos: coluna lateral (exportações recentes, abrir .slyden de qualquer pasta, atalhos de presets); botões do cartão só ao passar o mouse
+- [ ] **Otimizador do tamanho do vídeo (em andamento).** Teste (24 fotos, 1080p, 2 min, comparado ao mestre sem perdas; VMAF 95+ ≈ imperceptível): H.264 CRF20 veryfast 39,5 MB/VMAF 93,9 (padrão atual); H.264 CRF20 medium 48,8 MB/95,6; CRF20 slow 48,1 MB/95,8; CRF23 slow 30,9 MB/94,5; CRF18 slow 64,2 MB/96,3; H.265 CRF22 medium 29,0 MB/95,1 (146 s); H.265 CRF26 medium 15,4 MB/93,0. Próximos passos: achar o CRF de cada codec que empata em VMAF ~95 e comparar tamanhos; seletor Qualidade e tamanho na exportação (Rápida / Equilibrada / Compacta, H.265 opcional); tamanho-alvo (ex.: 200 MB)
 - [ ] Configurações: pasta padrão dos projetos, pasta de fontes extras, idioma, atalhos
 - [ ] Mais estilos de animação de texto (subir suavemente, digitar, zoom); várias configurações salvas (modelos com nome)
 - [ ] Arrastar também o tamanho do texto (alças); cursor de mão ao passar sobre o texto; fontes dos textos de exemplo da capa que existam também no Mac
