@@ -43,8 +43,8 @@ public partial class MainWindow
         if (Current is not { } spec) return;
         LengthBox.IsEnabled = spec.Seconds is null;
         double? beat = null;
-        if (_audio is not null && _analyses.TryGetValue(_audio, out var cached))
-            beat = SlideshowPlan.BeatSecondsOf(cached.Analysis, _cfg.Bpm);
+        if (_audio is not null && _music is { } cached)
+            beat = SlideshowPlan.BeatSecondsOf(cached.Bed.Analysis, _cfg.Bpm);
 
         if (spec.Seconds is not { } seconds)
             SlideSecondsHint.Text = "Vazio (0) = o tempo padrão. Com música, a duração própria arredonda para a batida mais próxima.";

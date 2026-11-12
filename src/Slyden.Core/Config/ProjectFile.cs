@@ -8,6 +8,7 @@ public sealed class ProjectFile
     public string Id { get; set; } = Guid.NewGuid().ToString("N");
     public string Name { get; set; } = "Novo projeto";
     public string PhotosFolder { get; set; } = "";
+    /// <summary>Só para ler projetos antigos; as músicas agora ficam em <see cref="SlideshowConfig.Tracks"/>.</summary>
     public string? AudioPath { get; set; }
     /// <summary>Preset com que o projeto foi criado (de onde vêm, por exemplo, os textos novos); vazio = o padrão.</summary>
     public string? PresetId { get; set; }
@@ -105,6 +106,10 @@ public sealed class ProjectStore(string root)
         {
             var project = JsonSerializer.Deserialize<ProjectFile>(File.ReadAllText(path), SlideshowConfig.Json)
                           ?? throw new InvalidDataException("Projeto vazio.");
+            // projetos antigos guardavam uma música só, fora da configuração
+            if (!string.IsNullOrWhiteSpace(project.AudioPath) && project.Config.Tracks.Count == 0)
+                project.Config.Tracks.Add(new MusicTrack { Path = project.AudioPath });
+            project.AudioPath = null;
             project.Config.Validate();
             project.FilePath = System.IO.Path.GetFullPath(path);
             return project;
@@ -148,7 +153,6 @@ public sealed class ProjectStore(string root)
         {
             Name = original.Name + " (cópia)",
             PhotosFolder = original.PhotosFolder,
-            AudioPath = original.AudioPath,
             Config = original.Config.Clone(),
         };
         string folder = System.IO.Path.GetDirectoryName(System.IO.Path.GetFullPath(path))!;

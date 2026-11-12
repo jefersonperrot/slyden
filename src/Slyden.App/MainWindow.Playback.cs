@@ -58,8 +58,10 @@ public partial class MainWindow
             BeatAnalysis? analysis = null;
             if (audio is not null)
             {
-                SlideInfo.Text = "Analisando a música…";
-                analysis = await AnalyzeAsync(audio);
+                SlideInfo.Text = _cfg.Tracks.Count > 1 ? "Analisando e montando as músicas…" : "Analisando a música…";
+                var music = await GetMusicAsync();
+                audio = music.AudioPath;
+                analysis = music.Bed.Analysis;
             }
             SlideInfo.Text = "Preparando a prévia…";
             preview = await Task.Run(() =>

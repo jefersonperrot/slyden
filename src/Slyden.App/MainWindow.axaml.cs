@@ -11,6 +11,7 @@ using Avalonia.Interactivity;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform.Storage;
 using SkiaSharp;
+using Slyden.Core.Audio;
 using Slyden.Core.Config;
 using Slyden.Core.Render;
 using SlideText = Slyden.Core.Config.TextBlock;
@@ -115,7 +116,8 @@ public partial class MainWindow : Window
     private ProjectFile? _project;
     private SlideshowConfig _cfg = new();
     private string _folder = "";
-    private string? _audio;
+    /// <summary>Primeira música do projeto (as músicas ficam em <see cref="SlideshowConfig.Tracks"/>); nulo = sem música.</summary>
+    private string? _audio => _cfg.Tracks.Count > 0 ? _cfg.Tracks[0].Path : null;
     private bool _dirty;
 
     private readonly ObservableCollection<SlideItem> _items = [];
@@ -179,6 +181,7 @@ public partial class MainWindow : Window
         PlayButton.Click += async (_, _) => await TogglePlayAsync();
         InitMenu();
         InitSlideTiming();
+        InitMusic();
         UpdateEditorActions();
         ProjectList.SizeChanged += (_, _) => UpdateCardWidth();
         HomeSearch.TextChanged += (_, _) => ApplyHomeFilter();
@@ -316,6 +319,7 @@ public partial class MainWindow : Window
     {
         StopPlayback(refresh: false);
         if (_project is not null && _dirty) Save();
+        DropMusicCache();
         base.OnClosing(e);
     }
 
@@ -532,14 +536,15 @@ public partial class MainWindow : Window
         _project = project;
         _cfg = project.Config;
         _folder = project.PhotosFolder;
-        _audio = project.AudioPath is { } a && File.Exists(a) ? a : null;
         _dirty = false;
+        DropMusicCache();
         ClearCache();
 
         _loading = true;
         _items.Clear();
         foreach (var photo in _cfg.Photos) _items.Add(new SlideItem(photo));
         SyncGlobalControls();
+        RebuildTrackList();
         _loading = false;
 
         PreviewImage.Source = null;
@@ -584,6 +589,7 @@ public partial class MainWindow : Window
         FadeOutSlider.Value = _cfg.AudioFadeOut;
         FadeInValue.Text = Seconds(_cfg.AudioFadeIn);
         FadeOutValue.Text = Seconds(_cfg.AudioFadeOut);
+        CrossfadeValue.Value = (decimal)_cfg.MusicCrossfade;
         Fmt169.IsChecked = _cfg.Format == "16:9";
         Fmt916.IsChecked = _cfg.Format == "9:16";
         Fmt11.IsChecked = _cfg.Format == "1:1";
@@ -594,7 +600,6 @@ public partial class MainWindow : Window
     {
         if (_project is null) return;
         _project.PhotosFolder = _folder;
-        _project.AudioPath = _audio;
         _project.Config = _cfg;
         try
         {
@@ -963,22 +968,6 @@ public partial class MainWindow : Window
 
     // ---------- música, formato, resumo ----------
 
-    private async Task ChooseMusicAsync()
-    {
-        if (_project is null) return;
-        var picked = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
-        {
-            Title = "Música do vídeo",
-            AllowMultiple = false,
-            FileTypeFilter = [new FilePickerFileType("Áudio") { Patterns = ["*.mp3", "*.wav", "*.m4a", "*.aac", "*.flac"] }],
-        });
-        if (picked.Count == 0 || picked[0].TryGetLocalPath() is not { } path) return;
-        StopPlayback(refresh: true);
-        _audio = path;
-        MarkDirty();
-        UpdateSummary();
-    }
-
     private void OnRemoveMusicTimeout(object? sender, EventArgs e) => ResetRemoveMusicConfirmation();
 
     private bool _confirmingRemoveMusic;
@@ -1007,9 +996,9 @@ public partial class MainWindow : Window
         }
         ResetRemoveMusicConfirmation();
         StopPlayback(refresh: true);
-        _audio = null;
+        _cfg.Tracks.Clear();
         MarkDirty();
-        UpdateSummary();
+        OnTracksChanged();
     }
 
     private void SetFormat(string format)
@@ -1042,11 +1031,16 @@ public partial class MainWindow : Window
         SecondsWarning.IsVisible = _audio is not null && _cfg.SecondsPerPhoto is not null;
         var (format, resolution) = ExportChoice();
         var (w, h) = VideoFormat.SizeOf(format, resolution);
-        ExportSummary.Text = $"Vai exportar em {format} ({w}×{h}). " +
-            (_audio is null ? "Sem música." : $"Música: {Path.GetFileName(_audio)}.");
+        string music = _cfg.Tracks.Count switch
+        {
+            0 => "Sem música.",
+            1 => $"Música: {Path.GetFileName(_audio)}.",
+            var n => $"{n} músicas: {string.Join(", ", _cfg.Tracks.Select(t => Path.GetFileNameWithoutExtension(t.Path)))}.",
+        };
+        ExportSummary.Text = $"Vai exportar em {format} ({w}×{h}). " + music;
         RhythmInfo.Text = _audio is null
             ? (_cfg.SecondsPerPhoto is { } s ? $"sem música · {s} s por foto" : $"sem música · {_cfg.Bpm:0} BPM")
-            : $"música: {Path.GetFileName(_audio)}";
+            : _cfg.Tracks.Count == 1 ? $"música: {Path.GetFileName(_audio)}" : $"{_cfg.Tracks.Count} músicas";
         TimelineInfo.Text = $"{_items.Count} fotos";
     }
 
@@ -1371,7 +1365,30 @@ public partial class MainWindow : Window
 
         var exportConfig = _cfg.Clone();
         (exportConfig.Format, exportConfig.Resolution) = exportChoice;
-        var request = new RenderRequest(_folder, output, exportConfig, _audio, Encoding: VideoEncoding.For(ChosenQuality));
+        string? audioPath = null;
+        BeatAnalysis? audioAnalysis = null;
+        if (_cfg.Tracks.Count > 0)
+        {
+            try
+            {
+                ExportStatus.Text = "Preparando a música…";
+                var music = await GetMusicAsync();
+                (audioPath, audioAnalysis) = (music.AudioPath, music.Bed.Analysis);
+            }
+            catch (Exception ex)
+            {
+                ExportStatus.Text = "Não foi possível preparar a música: " + ex.Message;
+                _exporting = false;
+                _exportCts.Dispose();
+                _exportCts = null;
+                ExportButton.Content = "Exportar";
+                ExportButton2.IsEnabled = true;
+                CancelExportButton.IsVisible = false;
+                ExportProgress.IsVisible = false;
+                return;
+            }
+        }
+        var request = new RenderRequest(_folder, output, exportConfig, audioPath, Encoding: VideoEncoding.For(ChosenQuality), Analysis: audioAnalysis);
         var watch = Stopwatch.StartNew();
         var progress = new Progress<RenderProgress>(p =>
         {

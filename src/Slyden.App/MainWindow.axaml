@@ -33,7 +33,7 @@
             <MenuItem Header="_Projeto" x:Name="MenuProject">
               <MenuItem x:Name="MenuRename" Header="Re_nomear projeto…" />
               <Separator />
-              <MenuItem x:Name="MenuMusic" Header="Escolher _música…" />
+              <MenuItem x:Name="MenuMusic" Header="_Adicionar música…" />
               <MenuItem x:Name="MenuRemoveMusic" Header="_Remover música" />
               <Separator />
               <MenuItem x:Name="MenuSettings" Header="_Configurações e presets…" />
@@ -319,7 +319,17 @@
                   <NumericUpDown Grid.Column="1" x:Name="SecondsValue" Minimum="0.5" Maximum="120" Increment="0.5"
                                  FormatString="0.##" Value="5" HorizontalAlignment="Stretch" />
                 </Grid>
-                <TextBlock Classes="h" Text="MÚSICA" />
+                <TextBlock Classes="h" Text="MÚSICAS" />
+                <StackPanel x:Name="TrackList" Spacing="6" />
+                <Button x:Name="AddTrackButton" Classes="btn" Content="+ Adicionar música" HorizontalAlignment="Left" />
+                <Grid x:Name="MusicTimeline" IsVisible="False" />
+                <Grid x:Name="CrossfadeRow" ColumnDefinitions="*,140" IsVisible="False">
+                  <TextBlock Classes="dim" VerticalAlignment="Center" Text="Cruzamento entre músicas (s)" />
+                  <NumericUpDown Grid.Column="1" x:Name="CrossfadeValue" Minimum="0" Maximum="30" Increment="0.5"
+                                 FormatString="0.#" Value="3" HorizontalAlignment="Stretch" />
+                </Grid>
+                <TextBlock x:Name="MusicSummary" Classes="hint" TextWrapping="Wrap" />
+                <TextBlock Classes="h" Text="AJUSTES DA MÚSICA" />
                 <ComboBox x:Name="MusicModeBox" HorizontalAlignment="Stretch" SelectedIndex="0">
                   <ComboBoxItem>Ajustar os slides à música (usa a música toda)</ComboBoxItem>
                   <ComboBoxItem>Cortar a música onde os slides acabam</ComboBoxItem>

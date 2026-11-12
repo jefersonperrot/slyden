@@ -19,7 +19,7 @@ public partial class MainWindow
         MenuUndo.Click += (_, _) => Undo();
         MenuRedo.Click += (_, _) => Redo();
         MenuRename.Click += async (_, _) => { if (_project is not null) await RenameProjectAsync(_project); };
-        MenuMusic.Click += async (_, _) => await ChooseMusicAsync();
+        MenuMusic.Click += async (_, _) => await AddTracksAsync();
         MenuRemoveMusic.Click += (_, _) => RemoveMusic();
         MenuSettings.Click += (_, _) => { if (SettingsView.IsVisible) CloseSettings(); else ShowSettings(); };
         MenuShortcuts.Click += (_, _) => ShowInfo("Atalhos de teclado",

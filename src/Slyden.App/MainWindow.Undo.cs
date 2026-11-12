@@ -6,7 +6,7 @@ namespace Slyden.App;
 /// <summary>Desfazer / refazer: guarda "fotografias" do projeto (configuração + música) a cada alteração.</summary>
 public partial class MainWindow
 {
-    private sealed record UndoState(SlideshowConfig Config, string? Audio, int Selected);
+    private sealed record UndoState(SlideshowConfig Config, int Selected);
 
     private const int UndoLimit = 100;
     // alterações em sequência rápida (arrastar um controle deslizante, digitar) valem como UM passo
@@ -17,7 +17,7 @@ public partial class MainWindow
     private DateTime _lastChange = DateTime.MinValue;
     private bool _restoring;
 
-    private UndoState Capture() => new(_cfg.Clone(), _audio, _selected);
+    private UndoState Capture() => new(_cfg.Clone(), _selected);
 
     /// <summary>Começa um histórico novo (ao abrir um projeto).</summary>
     private void ResetUndo()
@@ -81,9 +81,9 @@ public partial class MainWindow
                 if (item.Thumb is not null) thumbs[item.Spec.File] = item.Thumb;
 
             _cfg = state.Config.Clone();
-            _audio = state.Audio;
 
             _loading = true;
+            RebuildTrackList();
             _items.Clear();
             foreach (var photo in _cfg.Photos)
             {

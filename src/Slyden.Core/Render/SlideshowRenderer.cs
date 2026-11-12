@@ -6,10 +6,11 @@ namespace Slyden.Core.Render;
 
 /// <param name="PhotosFolder">Pasta onde estão os arquivos citados em <see cref="SlideshowConfig.Photos"/>.</param>
 /// <param name="AudioPath">Música; sem ela, usa o <see cref="SlideshowConfig.Bpm"/> e o vídeo sai mudo.</param>
+/// <param name="Analysis">Batidas do áudio, se já foram calculadas (ex.: da trilha montada por <see cref="MusicBed"/>).</param>
 /// <param name="FontFolders">Pastas com fontes (.ttf/.otf) além das instaladas no sistema; a pasta "fonts" ao lado do programa é sempre usada.</param>
 public sealed record RenderRequest(
     string PhotosFolder, string OutputPath, SlideshowConfig Config, string? AudioPath = null, int Fps = 30,
-    IReadOnlyList<string>? FontFolders = null, VideoEncoding? Encoding = null);
+    IReadOnlyList<string>? FontFolders = null, VideoEncoding? Encoding = null, BeatAnalysis? Analysis = null);
 
 /// <summary>Como o vídeo é comprimido. O padrão é o de sempre (H.264, CRF 20, rápido).</summary>
 /// <param name="Codec">libx264 (H.264, toca em tudo) ou libx265 (H.265/HEVC, arquivo menor).</param>
@@ -67,7 +68,7 @@ public static class SlideshowRenderer
             fonts.Resolve(block.Font, block.Bold, block.Italic, warnings);
         warnings = warnings.Distinct().ToList();
 
-        var analysis = request.AudioPath is { } audio ? BeatAnalyzer.Analyze(AudioDecoder.DecodeMono(audio)) : null;
+        var analysis = request.AudioPath is { } audio ? request.Analysis ?? BeatAnalyzer.Analyze(AudioDecoder.DecodeMono(audio)) : null;
         var plan = SlideshowPlan.Build(cfg, fps, analysis);
         var slides = plan.Slides;
         var edges = plan.Edges;

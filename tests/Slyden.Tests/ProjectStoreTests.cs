@@ -73,7 +73,7 @@ public class ProjectStoreTests : IDisposable
         string path = Store.Save(project);
         var back = ProjectStore.Load(path);
         Assert.Equal("Casamento", back.Name);
-        Assert.Equal(@"C:\musica.mp3", back.AudioPath);
+        Assert.Equal(@"C:\musica.mp3", back.Config.Tracks[0].Path); // o AudioPath antigo vira a primeira faixa
         Assert.Equal("9:16", back.Config.Format);
         Assert.Equal(2, back.Config.Photos[0].Length);
         Assert.Equal("Maria e João", back.Config.Photos[0].Texts![0].Text);

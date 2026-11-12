@@ -86,6 +86,10 @@ public sealed class SlideshowConfig
     public int? BeatsPerPhoto { get; set; }
     /// <summary>"fit_music" (padrão): as fotos se distribuem pela música toda; "fit_slides": a música é cortada onde as fotos acabam.</summary>
     public MusicMode MusicMode { get; set; } = MusicMode.FitMusic;
+    /// <summary>As músicas do vídeo, na ordem em que tocam (vazio = sem música).</summary>
+    public List<MusicTrack> Tracks { get; set; } = [];
+    /// <summary>Duração do cruzamento (fade) entre uma música e a seguinte, em segundos.</summary>
+    public double MusicCrossfade { get; set; } = 3;
     /// <summary>Entrada gradual da música, em segundos (0 = seca).</summary>
     public double AudioFadeIn { get; set; } = 0;
     /// <summary>Saída gradual da música no fim do vídeo, em segundos (0 = seca).</summary>
@@ -160,6 +164,13 @@ public sealed class SlideshowConfig
         if (Default.Shadow is < 0 or > 1) throw new InvalidDataException("default.shadow deve estar entre 0 e 1.");
         if (AudioFadeIn is < 0 or > 10) throw new InvalidDataException("audio_fade_in deve estar entre 0 e 10 segundos.");
         if (AudioFadeOut is < 0 or > 10) throw new InvalidDataException("audio_fade_out deve estar entre 0 e 10 segundos.");
+        if (MusicCrossfade is < 0 or > 30) throw new InvalidDataException("music_crossfade deve estar entre 0 e 30 segundos.");
+        foreach (var t in Tracks)
+        {
+            if (string.IsNullOrWhiteSpace(t.Path)) throw new InvalidDataException("Música sem caminho de arquivo.");
+            if (t.Start < 0) throw new InvalidDataException($"{t.Path}: start não pode ser negativo.");
+            if (t.End is { } e && e <= t.Start) throw new InvalidDataException($"{t.Path}: end deve ser maior que start.");
+        }
         if (SecondsPerPhoto is <= 0) throw new InvalidDataException("seconds_per_photo deve ser maior que zero.");
         if (FadeSeconds is <= 0) throw new InvalidDataException("fade_seconds deve ser maior que zero.");
         if (Bpm <= 0) throw new InvalidDataException("bpm deve ser maior que zero.");
