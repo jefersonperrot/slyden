@@ -329,6 +329,11 @@
                                  FormatString="0.#" Value="3" HorizontalAlignment="Stretch" />
                 </Grid>
                 <TextBlock x:Name="MusicSummary" Classes="hint" TextWrapping="Wrap" />
+                <TextBlock Classes="h" Text="SONS POR CIMA" />
+                <TextBlock Classes="hint" TextWrapping="Wrap"
+                           Text="Voz, efeitos… O som entra quando a foto escolhida aparece e a música abaixa enquanto ele toca." />
+                <StackPanel x:Name="SoundList" Spacing="6" />
+                <Button x:Name="AddSoundButton" Classes="btn" Content="+ Adicionar som" HorizontalAlignment="Left" />
                 <TextBlock Classes="h" Text="AJUSTES DA MÚSICA" />
                 <ComboBox x:Name="MusicModeBox" HorizontalAlignment="Stretch" SelectedIndex="0">
                   <ComboBoxItem>Ajustar os slides à música (usa a música toda)</ComboBoxItem>

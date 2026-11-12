@@ -84,6 +84,7 @@ public partial class MainWindow
 
             _loading = true;
             RebuildTrackList();
+            RebuildSoundList();
             _items.Clear();
             foreach (var photo in _cfg.Photos)
             {

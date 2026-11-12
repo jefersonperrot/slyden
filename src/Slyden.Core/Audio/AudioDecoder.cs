@@ -4,6 +4,9 @@ namespace Slyden.Core.Audio;
 
 public static class AudioDecoder
 {
+    /// <summary>Duração do áudio em segundos (decodifica em qualidade baixa; serve para sons curtos).</summary>
+    public static double Duration(string path) => DecodeMono(path, 8000).Length / 8000.0;
+
     /// <summary>Decodifica qualquer áudio (mp3, wav...) para amostras mono em ponto flutuante.</summary>
     public static float[] DecodeMono(string path, int sampleRate = BeatAnalyzer.SampleRate)
     {

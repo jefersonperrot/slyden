@@ -182,6 +182,7 @@ public partial class MainWindow : Window
         InitMenu();
         InitSlideTiming();
         InitMusic();
+        InitSounds();
         UpdateEditorActions();
         ProjectList.SizeChanged += (_, _) => UpdateCardWidth();
         HomeSearch.TextChanged += (_, _) => ApplyHomeFilter();
@@ -545,6 +546,7 @@ public partial class MainWindow : Window
         foreach (var photo in _cfg.Photos) _items.Add(new SlideItem(photo));
         SyncGlobalControls();
         RebuildTrackList();
+        RebuildSoundList();
         _loading = false;
 
         PreviewImage.Source = null;

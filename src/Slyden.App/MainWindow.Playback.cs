@@ -55,6 +55,7 @@ public partial class MainWindow
         double scale = Math.Min(1, PlayLongSide / Math.Max(w, h));
 
         SlideshowPreview? preview = null;
+        string? mixPath = null;
         try
         {
             BeatAnalysis? analysis = null;
@@ -72,10 +73,26 @@ public partial class MainWindow
                 p.Warm(Math.Min(startSlide, p.Plan.Slides.Count - 1));
                 return p;
             });
+            if (snapshot.Sounds.Count > 0)
+            {
+                // com sons por cima a prévia toca o MESMO áudio da exportação (música + sons, música abaixando)
+                SlideInfo.Text = "Montando o áudio…";
+                var previewPlan = preview.Plan;
+                string? musicFile = audio;
+                mixPath = await Task.Run(() =>
+                {
+                    var placed = AudioMix.Place(snapshot, previewPlan);
+                    if (placed.Count == 0) return null;
+                    string wav = Path.Combine(Path.GetTempPath(), $"slyden-previa-{Guid.NewGuid():N}.wav");
+                    AudioMix.RenderWav(AudioMix.Spec(snapshot, previewPlan, musicFile, placed, firstInput: 0), wav);
+                    return wav;
+                });
+            }
         }
         catch (Exception ex)
         {
             SlideInfo.Text = "Não foi possível tocar a prévia: " + ex.Message;
+            DeletePreviewMix(mixPath);
             preview?.Dispose();
             _preparing = false;
             PlayButton.IsEnabled = true;
@@ -96,7 +113,20 @@ public partial class MainWindow
         _audioDelayAt = -1;
         _pendingAudio = null;
         _audioOriginFrame = _playStartFrame;
-        if (audio is not null)
+        DeletePreviewMix(_previewMix);
+        _previewMix = mixPath;
+        if (mixPath is not null)
+        {
+            // o áudio montado já tem a capa (silêncio), a música e os sons: toca do ponto do vídeo em que a prévia começou
+            _player = new AudioPlayer();
+            if (!_player.Start(mixPath, (double)_playStartFrame / PlayFps, out var mixError))
+            {
+                _player.Dispose();
+                _player = null;
+                SlideInfo.Text = "Prévia sem som: " + mixError;
+            }
+        }
+        else if (audio is not null)
         {
             double startTime = (double)_playStartFrame / PlayFps;
             if (plan.IntroSeconds > 0 && startTime < plan.IntroSeconds - 1e-6)
@@ -124,6 +154,14 @@ public partial class MainWindow
         _playTimer.Tick -= OnPlayTick;
         _playTimer.Tick += OnPlayTick;
         _playTimer.Start();
+    }
+
+    private string? _previewMix; // áudio montado da prévia (arquivo temporário)
+
+    private static void DeletePreviewMix(string? path)
+    {
+        if (path is null) return;
+        try { File.Delete(path); } catch (IOException) { } catch (UnauthorizedAccessException) { }
     }
 
     private async Task<BeatAnalysis> AnalyzeAsync(string path)
@@ -245,6 +283,8 @@ public partial class MainWindow
         _player = null;
         _pendingAudio = null;
         _clock.Stop();
+        DeletePreviewMix(_previewMix);
+        _previewMix = null;
 
         var preview = _preview;
         _preview = null;

@@ -88,6 +88,8 @@ public sealed class SlideshowConfig
     public MusicMode MusicMode { get; set; } = MusicMode.FitMusic;
     /// <summary>As músicas do vídeo, na ordem em que tocam (vazio = sem música).</summary>
     public List<MusicTrack> Tracks { get; set; } = [];
+    /// <summary>Sons por cima da música (voz, efeitos), cada um preso ao início de uma foto.</summary>
+    public List<OverlaySound> Sounds { get; set; } = [];
     /// <summary>Duração do cruzamento (fade) entre uma música e a seguinte, em segundos.</summary>
     public double MusicCrossfade { get; set; } = 3;
     /// <summary>Entrada gradual da música, em segundos (0 = seca).</summary>
@@ -171,6 +173,16 @@ public sealed class SlideshowConfig
             if (t.Start < 0) throw new InvalidDataException($"{t.Path}: start não pode ser negativo.");
             if (t.StartPhoto is < 1) throw new InvalidDataException($"{t.Path}: start_photo deve ser 1 ou mais.");
             if (t.End is { } e && e <= t.Start) throw new InvalidDataException($"{t.Path}: end deve ser maior que start.");
+        }
+        foreach (var s in Sounds)
+        {
+            if (string.IsNullOrWhiteSpace(s.Path)) throw new InvalidDataException("Som sem caminho de arquivo.");
+            if (s.Photo < 1) throw new InvalidDataException($"{s.Path}: photo deve ser 1 ou mais.");
+            if (s.Delay is < 0 or > 600) throw new InvalidDataException($"{s.Path}: delay deve estar entre 0 e 600.");
+            if (s.Start < 0) throw new InvalidDataException($"{s.Path}: start não pode ser negativo.");
+            if (s.End is { } e && e <= s.Start) throw new InvalidDataException($"{s.Path}: end deve ser maior que start.");
+            if (s.Volume is < 0 or > 4) throw new InvalidDataException($"{s.Path}: volume deve estar entre 0 e 4.");
+            if (s.Duck is < 0 or > 1) throw new InvalidDataException($"{s.Path}: duck deve estar entre 0 e 1.");
         }
         if (SecondsPerPhoto is <= 0) throw new InvalidDataException("seconds_per_photo deve ser maior que zero.");
         if (FadeSeconds is <= 0) throw new InvalidDataException("fade_seconds deve ser maior que zero.");

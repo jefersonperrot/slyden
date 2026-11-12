@@ -74,6 +74,8 @@ public static class SlideshowRenderer
         var edges = plan.Edges;
         double total = plan.TotalSeconds;
         var painter = new TextPainter(fonts);
+        var placed = AudioMix.Place(cfg, plan);
+        var mix = placed.Count > 0 ? AudioMix.Spec(cfg, plan, request.AudioPath, placed, firstInput: 1) : null;
 
         string partial = Path.Combine(Path.GetDirectoryName(Path.GetFullPath(request.OutputPath))!,
                                       Path.GetFileNameWithoutExtension(request.OutputPath) + ".partial.mp4");
@@ -81,7 +83,7 @@ public static class SlideshowRenderer
         {
             using (var encoder = new FfmpegEncoder(FfmpegLocator.Find(),
                        EncoderArguments(width, height, fps, request.AudioPath, plan.AudioStart, total, partial,
-                                          cfg.AudioFadeIn, cfg.AudioFadeOut, request.Encoding ?? VideoEncoding.Default, plan.IntroSeconds)))
+                                          cfg.AudioFadeIn, cfg.AudioFadeOut, request.Encoding ?? VideoEncoding.Default, plan.IntroSeconds, mix)))
             {
                 // Vários quadros são desenhados ao mesmo tempo (um por núcleo) e um único fio os entrega ao
                 // ffmpeg na ordem certa. Os quadros em andamento ocupam "espaços" (bitmaps) reutilizados.
@@ -202,14 +204,20 @@ public static class SlideshowRenderer
     private static List<string> EncoderArguments(int width, int height, int fps, string? audio, double audioStart,
                                                  double total, string output,
                                                  double fadeInSeconds, double fadeOutSeconds, VideoEncoding encoding,
-                                                 double audioDelay = 0)
+                                                 double audioDelay = 0, MixSpec? mix = null)
     {
         var args = new List<string>
         {
             "-y", "-loglevel", "error",
             "-f", "rawvideo", "-pix_fmt", "bgra", "-s", $"{width}x{height}", "-r", fps.ToString(), "-i", "-",
         };
-        if (audio is not null)
+        if (mix is not null)
+        {
+            // música + sons por cima, com a música abaixando enquanto eles tocam (o grafo vem de AudioMix, o mesmo da prévia)
+            args.AddRange(mix.Inputs);
+            args.AddRange(["-filter_complex", mix.Graph, "-map", "0:v", "-map", "[out]", "-c:a", "aac", "-b:a", "192k", "-t", Inv(mix.Total)]);
+        }
+        else if (audio is not null)
         {
             var filters = new List<string>();
             // com capa antes da música, o áudio é atrasado: os fades valem para o trecho de música (tempo do áudio)
