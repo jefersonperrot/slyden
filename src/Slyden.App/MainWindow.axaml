@@ -10,8 +10,11 @@
     <Border Grid.Row="0" Background="#1F1F22" BorderBrush="#333338" BorderThickness="0,0,0,1" Height="40">
       <Grid ColumnDefinitions="Auto,*,Auto" Margin="12,0">
         <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
-          <Border Width="8" Height="8" CornerRadius="2" Background="#3B8BFF" VerticalAlignment="Center" />
-          <TextBlock Text="SLYDEN" FontWeight="Medium" LetterSpacing="2" FontSize="12" VerticalAlignment="Center" Margin="0,0,14,0" />
+          <StackPanel x:Name="BrandLogo" Orientation="Horizontal" Spacing="10" Background="Transparent" Cursor="Hand"
+                      ToolTip.Tip="Ir para a tela de projetos">
+            <Border Width="8" Height="8" CornerRadius="2" Background="#3B8BFF" VerticalAlignment="Center" />
+            <TextBlock Text="SLYDEN" FontWeight="Medium" LetterSpacing="2" FontSize="12" VerticalAlignment="Center" Margin="0,0,14,0" />
+          </StackPanel>
           <Border Width="1" Height="18" Background="#333338" VerticalAlignment="Center" Margin="0,0,6,0" />
           <Menu x:Name="MainMenu" VerticalAlignment="Center" Height="30">
             <MenuItem Header="_Arquivo" x:Name="MenuFile">

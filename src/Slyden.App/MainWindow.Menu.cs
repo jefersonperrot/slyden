@@ -12,6 +12,7 @@ public partial class MainWindow
     {
         MenuNew.Click += (_, _) => { LeaveEditor(); ShowNewProject(); };
         MenuProjects.Click += (_, _) => ShowHome();
+        BrandLogo.PointerPressed += (_, _) => ShowHome();
         MenuSave.Click += (_, _) => Save();
         MenuExport.Click += async (_, _) => { ShowTab(3); await ExportOrCancelAsync(); };
         MenuExit.Click += (_, _) => Close(); // OnClosing cuida de salvar
