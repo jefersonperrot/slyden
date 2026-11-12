@@ -232,6 +232,7 @@ public partial class MainWindow : Window
             if (_suspendSelection) return;
             if (_playing) StopPlayback(refresh: false); // o usuário clicou numa foto: para a prévia
             _selected = SlideList.SelectedIndex;
+            MusicStrip.SelectedPhoto = _selected;
             UpdateSelectionButtons();
             LoadSlideControls();
             RefreshPreview();
@@ -622,6 +623,7 @@ public partial class MainWindow : Window
         RecordChange();
         _dirty = true;
         UpdateSaveState();
+        ScheduleStripMarks(); // as trocas de foto na faixa da música dependem de quase tudo (fotos, segundos, ritmo)
     }
 
     private void UpdateSaveState()

@@ -129,7 +129,8 @@ Direção visual: tema escuro no estilo dos aplicativos Adobe. Maquete aprovada 
 - [x] Onda e botão ▶ Ouvir em cada som por cima (alças de início/fim, igual às músicas)
 - [ ] Sons por cima, depois: mostrar na linha do tempo onde cada som toca; arrastar o som para outra foto
 - [x] Faixa da trilha de música abaixo da linha do tempo das fotos (MusicStripView): onda da trilha inteira, marcas das batidas, divisão e nome de cada música; clicar numa música abre a aba Padrão, rola até ela e a destaca
-- [ ] Faixa da trilha, depois: marcar onde cada foto troca e onde cada som por cima toca; marcador de posição durante a prévia; clicar para pular a prévia até ali
+- [x] Faixa da trilha marca onde cada foto troca (linha amarela em cada início de foto, número quando há espaço, foto selecionada em branco; clicar na marca seleciona a foto; atualiza sozinha ao editar)
+- [ ] Faixa da trilha, depois: marcar onde cada som por cima toca; marcador de posição durante a prévia; clicar para pular a prévia até ali
 - [ ] **Testar as músicas na tela** (adicionar 2 ou 3, cortar início/fim, subir/descer, tocar a prévia, exportar)
 - [x] Onda do áudio em cada música (alças brancas arrastáveis para início e fim, grudam nas batidas; trecho fora do corte escurecido); 208 testes
 - [ ] Músicas, próximas etapas: onda da trilha inteira com marcas das fotos

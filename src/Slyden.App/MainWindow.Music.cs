@@ -27,6 +27,10 @@ public partial class MainWindow
     {
         AddTrackButton.Click += async (_, _) => await AddTracksAsync();
         MusicStrip.TrackClicked += GoToTrack;
+        MusicStrip.PhotoClicked += i =>
+        {
+            if (i >= 0 && i < _items.Count) SlideList.SelectedIndex = i;
+        };
         CrossfadeValue.ValueChanged += (_, _) =>
         {
             if (_loading || _project is null) return;
@@ -34,6 +38,51 @@ public partial class MainWindow
             MarkDirty();
             _ = RefreshMusicInfoAsync();
         };
+    }
+
+    private Avalonia.Threading.DispatcherTimer? _marksTimer;
+    private int _marksVersion;
+
+    /// <summary>Recalcula as marcas depois de uma pausa nas edições (arrastar um controle dispara dezenas de mudanças).</summary>
+    private void ScheduleStripMarks()
+    {
+        if (_cfg.Tracks.Count == 0) return;
+        _marksTimer ??= new Avalonia.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(350) };
+        _marksTimer.Stop();
+        _marksTimer.Tick -= OnMarksTimer;
+        _marksTimer.Tick += OnMarksTimer;
+        _marksTimer.Start();
+    }
+
+    private void OnMarksTimer(object? sender, EventArgs e)
+    {
+        _marksTimer?.Stop();
+        _ = RefreshStripMarksAsync();
+    }
+
+    /// <summary>Calcula em que instante da trilha cada foto troca (o mesmo plano da prévia e da exportação) e marca na faixa.</summary>
+    private async Task RefreshStripMarksAsync()
+    {
+        int version = ++_marksVersion;
+        if (_music is not { } music || _cfg.Tracks.Count == 0 || _cfg.Photos.Count == 0)
+        {
+            MusicStrip.SetPhotos([]);
+            return;
+        }
+        var snapshot = _cfg.Clone();
+        var analysis = music.Bed.Analysis;
+        double[] starts;
+        try
+        {
+            starts = await Task.Run(() =>
+            {
+                var plan = Slyden.Core.Render.SlideshowPlan.Build(snapshot, PlayFps, analysis);
+                // com capa antes da música, o primeiro instante é "virtual" (antes da música): a capa fica no começo da faixa
+                return Enumerable.Range(0, plan.Slides.Count).Select(i => i == 0 && plan.IntroSeconds > 0 ? 0 : plan.Boundaries[i]).ToArray();
+            });
+        }
+        catch (Exception) { starts = []; } // música curta demais ou sem batidas: sem marcas
+        if (version == _marksVersion) MusicStrip.SetPhotos(starts);
     }
 
     /// <summary>Clique na faixa da trilha: abre a aba Padrão, rola até a música clicada e a destaca por um instante.</summary>
@@ -428,6 +477,8 @@ public partial class MainWindow
             DrawMusicTimeline(music.Bed);
             MusicStrip.Set(music.Bed, p => _peaks.TryGetValue(p, out var peaks) ? peaks : null, TrackColors);
             MusicStrip.IsVisible = true;
+            MusicStrip.SelectedPhoto = _selected;
+            _ = RefreshStripMarksAsync();
         }
         catch (Exception ex)
         {

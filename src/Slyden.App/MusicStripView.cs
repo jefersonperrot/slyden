@@ -21,8 +21,27 @@ public sealed class MusicStripView : Control
     private double _duration;
     private int _hover = -1;
 
+    private double[] _photoStarts = [];
+    private int _selectedPhoto = -1;
+
     /// <summary>Índice da música clicada (0 = primeira).</summary>
     public event Action<int>? TrackClicked;
+    /// <summary>Índice da foto cuja marca de troca foi clicada (0 = primeira).</summary>
+    public event Action<int>? PhotoClicked;
+
+    /// <summary>Foto selecionada na linha do tempo (a marca dela fica em destaque); -1 = nenhuma.</summary>
+    public int SelectedPhoto
+    {
+        get => _selectedPhoto;
+        set { _selectedPhoto = value; InvalidateVisual(); }
+    }
+
+    /// <summary>Instante da trilha (s) em que cada foto aparece, na ordem das fotos.</summary>
+    public void SetPhotos(IReadOnlyList<double> starts)
+    {
+        _photoStarts = starts.ToArray();
+        InvalidateVisual();
+    }
 
     public MusicStripView()
     {
@@ -100,6 +119,26 @@ public sealed class MusicStripView : Control
                 context.DrawRectangle(tick, null, new Rect(Math.Clamp(XOf(_beats[i]), 0, w - 1), h - 7, 1, 7));
         }
 
+        // trocas de foto: uma linha em cada início de foto (a selecionada em branco), com o número quando há espaço
+        if (_photoStarts.Length > 0)
+        {
+            double spacing = w * (_photoStarts[^1] - _photoStarts[0]) / _duration / Math.Max(1, _photoStarts.Length - 1);
+            var line = new SolidColorBrush(Color.Parse("#FFD24A"), 0.85);
+            var number = new SolidColorBrush(Color.Parse("#FFD24A"));
+            for (int i = 0; i < _photoStarts.Length; i++)
+            {
+                double x = Math.Clamp(XOf(_photoStarts[i]), 0, w - 2);
+                bool selected = i == _selectedPhoto;
+                context.DrawRectangle(selected ? new SolidColorBrush(Colors.White) : line, null, new Rect(x, 0, selected ? 2.5 : 1, h));
+                if (spacing >= 24 || selected)
+                {
+                    var label = new FormattedText($"{i + 1}", CultureInfo.CurrentCulture, FlowDirection.LeftToRight, Typeface.Default, 10,
+                                                  selected ? new SolidColorBrush(Colors.White) : number);
+                    context.DrawText(label, new Point(x + 3, h - 28));
+                }
+            }
+        }
+
         // divisão entre as músicas e o nome de cada uma
         var white = new SolidColorBrush(Colors.White);
         for (int i = 0; i < _blocks.Count; i++)
@@ -125,14 +164,30 @@ public sealed class MusicStripView : Control
         return _blocks.Count - 1;
     }
 
+    /// <summary>Marca de troca de foto perto do ponteiro (a até 5 px), ou -1.</summary>
+    private int PhotoNear(double x)
+    {
+        int best = -1;
+        double distance = 5;
+        for (int i = 0; i < _photoStarts.Length; i++)
+        {
+            double d = Math.Abs(XOf(_photoStarts[i]) - x);
+            if (d <= distance) (best, distance) = (i, d);
+        }
+        return best;
+    }
+
     protected override void OnPointerMoved(PointerEventArgs e)
     {
         base.OnPointerMoved(e);
-        int hover = BlockAt(e.GetPosition(this).X);
+        double x = e.GetPosition(this).X;
+        int photo = PhotoNear(x);
+        int hover = BlockAt(x);
+        ToolTip.SetTip(this, photo >= 0
+            ? $"Foto {photo + 1} começa aqui · clique para selecioná-la"
+            : hover >= 0 ? $"{hover + 1}. {_blocks[hover].Name} · clique para editar esta música" : null);
         if (hover == _hover) return;
         _hover = hover;
-        if (hover >= 0)
-            ToolTip.SetTip(this, $"{hover + 1}. {_blocks[hover].Name} · clique para editar esta música");
         InvalidateVisual();
     }
 
@@ -147,7 +202,10 @@ public sealed class MusicStripView : Control
     {
         base.OnPointerPressed(e);
         if (!e.GetCurrentPoint(this).Properties.IsLeftButtonPressed) return;
-        int i = BlockAt(e.GetPosition(this).X);
+        double x = e.GetPosition(this).X;
+        int photo = PhotoNear(x);
+        if (photo >= 0) { PhotoClicked?.Invoke(photo); return; }
+        int i = BlockAt(x);
         if (i >= 0) TrackClicked?.Invoke(i);
     }
 }
