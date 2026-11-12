@@ -68,7 +68,8 @@ internal sealed class SlideRenderer : IDisposable
 
     /// <param name="t">Progresso do movimento, de 0 a 1.</param>
     /// <param name="timing">Onde estamos no slide, para o fade dos textos; sem ele os textos aparecem inteiros.</param>
-    public void Draw(SKCanvas canvas, double t, TextTiming? timing = null)
+    /// <param name="imageAlpha">Quanto a imagem já apareceu (0 = tudo preto, 1 = normal); os textos não são afetados.</param>
+    public void Draw(SKCanvas canvas, double t, TextTiming? timing = null, double imageAlpha = 1)
     {
         double e = SlideGeometry.Ease(t);
         var view = SlideGeometry.View(
@@ -110,6 +111,12 @@ internal sealed class SlideRenderer : IDisposable
         {
             using var dark = new SKPaint { Color = new SKColor(0, 0, 0, (byte)Math.Round(_dim * 255)) };
             canvas.DrawRect(SKRect.Create(_frameWidth, _frameHeight), dark);
+        }
+
+        if (imageAlpha < 1)
+        {
+            using var veil = new SKPaint { Color = new SKColor(0, 0, 0, (byte)Math.Round((1 - Math.Clamp(imageAlpha, 0, 1)) * 255)) };
+            canvas.DrawRect(SKRect.Create(_frameWidth, _frameHeight), veil);
         }
 
         if (_painter is null) return;

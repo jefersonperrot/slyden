@@ -12,7 +12,7 @@ public sealed record ResolvedSlide(
     int Length = 1, double Dim = 0, IReadOnlyList<TextBlock>? Texts = null,
     double Scale = 1, BackgroundKind Background = BackgroundKind.Blur,
     double BackgroundBlur = 1, double BackgroundDim = 0.1, double Shadow = 0.5,
-    string BackgroundColor = "#FFFFFF");
+    string BackgroundColor = "#FFFFFF", double? Seconds = null, double ImageFadeIn = 0);
 
 public static class SlideResolver
 {
@@ -30,7 +30,7 @@ public static class SlideResolver
                                          p.Transition ?? d.Transition, p.Zoom, p.Center,
                                          p.Length ?? 1, p.Dim ?? 0, p.Texts ?? [],
                                          p.Scale ?? d.Scale, p.Background ?? d.Background,
-                                         d.BackgroundBlur, d.BackgroundDim, d.Shadow, d.BackgroundColor));
+                                         d.BackgroundBlur, d.BackgroundDim, d.Shadow, d.BackgroundColor, p.Seconds, p.ImageFadeIn ?? 0));
         }
         return result;
     }

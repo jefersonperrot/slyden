@@ -50,4 +50,64 @@ public static class CutPlanner
         for (int i = bestPhase; i < count; i += per) cuts.Add(analysis.BeatTimes[i]);
         return new CutPlan(per, bestPhase, cuts.ToArray());
     }
+
+    /// <summary>
+    /// Plano para quando alguns slides têm duração própria. Cada slide ocupa um intervalo de batidas: os de duração fixa
+    /// (<paramref name="fixedBeats"/>) o que pediram, os outros "length" vezes o ritmo. Todas as trocas caem em batidas.
+    /// Devolve um instante de início por slide mais o fim; para antes do slide que não couber na música.
+    /// </summary>
+    /// <param name="fit">Espalha os slides sem duração fixa pelo que sobra da música (ritmo automático).</param>
+    public static CutPlan PlanMixed(BeatAnalysis analysis, IReadOnlyList<int?> fixedBeats, IReadOnlyList<int> lengths,
+                                    bool fit, int? beatsPerPhoto)
+    {
+        int count = analysis.BeatTimes.Length;
+        int n = fixedBeats.Count;
+        int normalUnits = 0, fixedTotal = 0;
+        for (int i = 0; i < n; i++)
+        {
+            if (fixedBeats[i] is { } b) fixedTotal += b; else normalUnits += lengths[i];
+        }
+
+        var cuts = new List<double>();
+        if (count == 0) return new CutPlan(1, 0, [0, analysis.DurationSeconds]);
+
+        if (fit && normalUnits > 0)
+        {
+            // os slides comuns dividem igualmente as batidas que os fixos não usam (±1 batida)
+            double per = Math.Max(1.0, (double)(count - fixedTotal) / normalUnits);
+            double pos = 0;
+            int index = 0;
+            cuts.Add(analysis.BeatTimes[0]);
+            for (int i = 0; i < n; i++)
+            {
+                pos += fixedBeats[i] is { } b ? b : lengths[i] * per;
+                index = Math.Max(index + 1, (int)Math.Round(pos));
+                bool last = i == n - 1;
+                if (last) { cuts.Add(Math.Max(analysis.DurationSeconds, cuts[^1] + 0.5)); break; }
+                if (index >= count) break; // sem batidas para os slides que faltam
+                cuts.Add(analysis.BeatTimes[index]);
+            }
+            return new CutPlan(Math.Max(1, (int)Math.Round(per)), 0, cuts.ToArray());
+        }
+
+        int perPhoto = beatsPerPhoto
+            ?? AutoChoices.FirstOrDefault(p => normalUnits == 0 || (count - 1 - fixedTotal) / p >= normalUnits, 2);
+        int phase = 0;
+        double bestSum = double.NegativeInfinity;
+        for (int p = 0; p < Math.Min(perPhoto, count); p++)
+        {
+            double sum = 0;
+            for (int i = p; i < count; i += perPhoto) sum += analysis.BeatStrengths[i];
+            if (sum > bestSum) { bestSum = sum; phase = p; }
+        }
+        int at = phase;
+        cuts.Add(analysis.BeatTimes[at]);
+        for (int i = 0; i < n; i++)
+        {
+            at += fixedBeats[i] ?? lengths[i] * perPhoto;
+            if (at >= count) break; // este slide não cabe
+            cuts.Add(analysis.BeatTimes[at]);
+        }
+        return new CutPlan(perPhoto, phase, cuts.ToArray());
+    }
 }

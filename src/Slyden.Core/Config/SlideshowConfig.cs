@@ -66,6 +66,12 @@ public sealed class PhotoSpec
     public double? Scale { get; set; }
     /// <summary>Fundo desta foto; sem valor, vale o padrão.</summary>
     public BackgroundKind? Background { get; set; }
+    /// <summary>Duração deste slide em segundos (sobrescreve o padrão). Com música arredonda para a batida mais próxima.</summary>
+    public double? Seconds { get; set; }
+    /// <summary>Só na primeira foto (a capa), com música: a capa dura estes segundos e a música só começa depois dela.</summary>
+    public double? IntroSeconds { get; set; }
+    /// <summary>A imagem aparece saindo do preto em tantos segundos (só vale na primeira foto; os textos têm o fade próprio).</summary>
+    public double? ImageFadeIn { get; set; }
     /// <summary>Textos sobre este slide.</summary>
     public List<TextBlock>? Texts { get; set; }
 }
@@ -172,6 +178,9 @@ public sealed class SlideshowConfig
             if (p.Length is < 1 or > 16) throw new InvalidDataException($"{p.File}: length deve estar entre 1 e 16.");
             if (p.Scale is < 0.3 or > 1) throw new InvalidDataException($"{p.File}: scale deve estar entre 0,3 e 1.");
             if (p.Dim is < 0 or > 1) throw new InvalidDataException($"{p.File}: dim deve estar entre 0 e 1.");
+            if (p.Seconds is <= 0 or > 600) throw new InvalidDataException($"{p.File}: seconds deve estar entre 0 e 600.");
+            if (p.IntroSeconds is <= 0 or > 60) throw new InvalidDataException($"{p.File}: intro_seconds deve estar entre 0 e 60.");
+            if (p.ImageFadeIn is < 0 or > 10) throw new InvalidDataException($"{p.File}: image_fade_in deve estar entre 0 e 10.");
             for (int i = 0; i < (p.Texts?.Count ?? 0); i++) p.Texts![i].Validate($"{p.File}, texto {i + 1}");
         }
     }

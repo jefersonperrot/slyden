@@ -22,6 +22,11 @@ public partial class MainWindow
     private AudioPlayer? _player;
     private readonly Stopwatch _clock = new();
     private int _playStartFrame, _lastPlayFrame = -1, _playSlide = -1;
+    // música atrasada (capa antes da música): a música só entra quando o relógio chega ao instante _audioDelayAt
+    private int _audioOriginFrame;      // quadro do vídeo em que a música está em Elapsed = 0
+    private double _audioDelayAt = -1;  // segundos do relógio em que a música deve começar (-1 = já começou ou não há)
+    private string? _pendingAudio;
+    private double _pendingAudioPos;
     private WriteableBitmap? _playBitmap;
     private byte[] _copyBuffer = [];
     private DispatcherTimer? _playTimer;
@@ -84,14 +89,29 @@ public partial class MainWindow
         PlayButton.Content = "■  Parar";
         MotionSlider.IsEnabled = false;
 
+        _audioDelayAt = -1;
+        _pendingAudio = null;
+        _audioOriginFrame = _playStartFrame;
         if (audio is not null)
         {
-            _player = new AudioPlayer();
-            if (!_player.Start(audio, plan.AudioStart + (double)_playStartFrame / PlayFps, out var audioError))
+            double startTime = (double)_playStartFrame / PlayFps;
+            if (plan.IntroSeconds > 0 && startTime < plan.IntroSeconds - 1e-6)
             {
-                _player.Dispose();
-                _player = null;
-                SlideInfo.Text = "Prévia sem som: " + audioError;
+                // começou dentro da capa: o relógio anda sozinho e a música entra quando a capa termina
+                _pendingAudio = audio;
+                _pendingAudioPos = plan.AudioStart;
+                _audioOriginFrame = plan.Edges[1];
+                _audioDelayAt = (plan.Edges[1] - _playStartFrame) / (double)PlayFps;
+            }
+            else
+            {
+                _player = new AudioPlayer();
+                if (!_player.Start(audio, plan.AudioStart + startTime - plan.IntroSeconds, out var audioError))
+                {
+                    _player.Dispose();
+                    _player = null;
+                    SlideInfo.Text = "Prévia sem som: " + audioError;
+                }
             }
         }
 
@@ -116,8 +136,16 @@ public partial class MainWindow
         if (!_playing || _preview is not { } preview) return;
 
         // o relógio é a música (quando há): assim imagem e som não se afastam, mesmo que a tela perca quadros
-        double elapsed = _player is not null ? _player.Elapsed : _clock.Elapsed.TotalSeconds;
-        int frame = _playStartFrame + (int)(elapsed * PlayFps);
+        if (_pendingAudio is not null && _clock.Elapsed.TotalSeconds >= _audioDelayAt)
+        {
+            var next = new AudioPlayer();
+            if (next.Start(_pendingAudio, _pendingAudioPos, out var delayedError)) _player = next;
+            else { next.Dispose(); SlideInfo.Text = "Prévia sem som: " + delayedError; }
+            _pendingAudio = null;
+        }
+        int frame = _player is not null
+            ? _audioOriginFrame + (int)(_player.Elapsed * PlayFps)
+            : _playStartFrame + (int)(_clock.Elapsed.TotalSeconds * PlayFps);
         if (frame >= preview.Plan.FrameCount)
         {
             StopPlayback(refresh: true);
@@ -205,6 +233,7 @@ public partial class MainWindow
         _playTimer?.Stop();
         _player?.Dispose();
         _player = null;
+        _pendingAudio = null;
         _clock.Stop();
 
         var preview = _preview;

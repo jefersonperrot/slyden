@@ -36,6 +36,8 @@ public sealed class SlideItem(PhotoSpec spec) : Notifying
         {
             var tags = new List<string>();
             if (Spec.Length is > 1) tags.Add($"×{Spec.Length}");
+            if (Spec.Seconds is { } sec) tags.Add($"{sec:0.#}s");
+            if (Spec.IntroSeconds is > 0) tags.Add("♪ depois");
             if (Spec.Texts is { Count: > 0 }) tags.Add("Aa");
             if (Spec.Effect is not null) tags.Add(MainWindow.EffectName(Spec.Effect.Value));
             return string.Join("  ", tags);
@@ -160,6 +162,7 @@ public partial class MainWindow : Window
 
         PlayButton.Click += async (_, _) => await TogglePlayAsync();
         InitMenu();
+        InitSlideTiming();
         UpdateEditorActions();
         ProjectList.SizeChanged += (_, _) => UpdateCardWidth();
         HomeSearch.TextChanged += (_, _) => ApplyHomeFilter();
@@ -1052,6 +1055,7 @@ public partial class MainWindow : Window
         ScaleSlider.Value = (spec.Scale ?? _cfg.Default.Scale) * 100;
         ScaleValue.Text = $"{ScaleSlider.Value:0}%";
         SetChips(BackgroundChips, [spec.Background is { } bg ? 1 + (int)bg : 0]);
+        LoadSlideTiming(spec);
         _loading = false;
         ReloadTexts(select: 0);
         SlideInfo.Text = $"Foto {_selected + 1} de {_cfg.Photos.Count} · {Path.GetFileName(spec.File)}";
@@ -1091,6 +1095,7 @@ public partial class MainWindow : Window
         if (Current is not { } spec) return;
         spec.Effect = null; spec.Intensity = null; spec.Transition = null; spec.Length = null; spec.Dim = null;
         spec.Scale = null; spec.Background = null;
+        spec.Seconds = null; spec.IntroSeconds = null; spec.ImageFadeIn = null;
         _items[_selected].RefreshTags();
         MarkDirty();
         LoadSlideControls();

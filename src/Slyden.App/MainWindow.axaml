@@ -131,6 +131,23 @@
                     <ComboBoxItem>3</ComboBoxItem><ComboBoxItem>4</ComboBoxItem>
                   </ComboBox>
                 </Grid>
+                <Grid ColumnDefinitions="*,120">
+                  <TextBlock Classes="dim" VerticalAlignment="Center" Text="Duração própria (s)" />
+                  <NumericUpDown Grid.Column="1" x:Name="SlideSeconds" Minimum="0" Maximum="600" Increment="0.5" FormatString="0.0" Value="0" />
+                </Grid>
+                <TextBlock x:Name="SlideSecondsHint" Classes="hint" TextWrapping="Wrap" />
+                <StackPanel x:Name="FirstSlideOptions" Spacing="12">
+                  <TextBlock Classes="h" Text="ABERTURA (PRIMEIRA FOTO)" />
+                  <Grid ColumnDefinitions="*,120">
+                    <TextBlock Classes="dim" VerticalAlignment="Center" Text="Capa antes da música (s)" />
+                    <NumericUpDown Grid.Column="1" x:Name="CoverIntro" Minimum="0" Maximum="60" Increment="0.5" FormatString="0.0" Value="0" />
+                  </Grid>
+                  <Grid ColumnDefinitions="*,120">
+                    <TextBlock Classes="dim" VerticalAlignment="Center" Text="Imagem aparece em (s)" />
+                    <NumericUpDown Grid.Column="1" x:Name="CoverImageFade" Minimum="0" Maximum="10" Increment="0.1" FormatString="0.0" Value="0" />
+                  </Grid>
+                  <TextBlock x:Name="CoverIntroHint" Classes="hint" TextWrapping="Wrap" />
+                </StackPanel>
                 <Grid ColumnDefinitions="*,150">
                   <TextBlock Classes="dim" VerticalAlignment="Center" Text="Escurecer foto" />
                   <Slider Grid.Column="1" x:Name="DimSlider" Minimum="0" Maximum="100" Value="0" />
