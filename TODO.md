@@ -126,7 +126,7 @@ Direção visual: tema escuro no estilo dos aplicativos Adobe. Maquete aprovada 
 
 ## A fazer — produto e negócio
 - [ ] Definir o nome do produto (hoje é nome de trabalho)
-- [ ] **Licença do ffmpeg:** builds com libx264 são GPL; definir como distribuir (build LGPL com encoder de hardware/OpenH264 ou licença do x264) antes de vender
+- [x] **Licença do ffmpeg (decidido):** manter o build GPL (x264/x265) chamado como programa separado; o instalador inclui o aviso de licença do ffmpeg, o link do código-fonte da build usada e permite trocar o ffmpeg.exe. Plano B: build LGPL + codificador de hardware. Conferir com um especialista antes de vender (patentes H.264/HEVC)
 - [ ] Validar demanda: vídeo de demonstração + página simples com preço (ex.: R$ 29–39/mês) mostrada a outros fotógrafos
 - [ ] Música: manter por conta do usuário; depois avaliar catálogo licenciado (perguntar por escrito ao fornecedor se pode embutir no app)
 - [ ] Assinatura/licença e instalador (por último)

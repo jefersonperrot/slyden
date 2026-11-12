@@ -1,4 +1,4 @@
-﻿using SkiaSharp;
+using SkiaSharp;
 using Slyden.Core.Audio;
 using Slyden.Core.Config;
 
@@ -9,7 +9,16 @@ namespace Slyden.Core.Render;
 /// <param name="FontFolders">Pastas com fontes (.ttf/.otf) além das instaladas no sistema; a pasta "fonts" ao lado do programa é sempre usada.</param>
 public sealed record RenderRequest(
     string PhotosFolder, string OutputPath, SlideshowConfig Config, string? AudioPath = null, int Fps = 30,
-    IReadOnlyList<string>? FontFolders = null);
+    IReadOnlyList<string>? FontFolders = null, VideoEncoding? Encoding = null);
+
+/// <summary>Como o vídeo é comprimido. O padrão é o de sempre (H.264, CRF 20, rápido).</summary>
+/// <param name="Codec">libx264 (H.264, toca em tudo) ou libx265 (H.265/HEVC, arquivo menor).</param>
+/// <param name="Crf">Qualidade constante: menor = melhor e maior; 0 = sem perdas (só H.264).</param>
+/// <param name="Preset">Esforço do codificador: de ultrafast a veryslow; mais lento = arquivo menor na mesma qualidade.</param>
+public sealed record VideoEncoding(string Codec = "libx264", int Crf = 20, string Preset = "veryfast")
+{
+    public static VideoEncoding Default { get; } = new();
+}
 
 public sealed record RenderProgress(int Slide, int Slides, double Fraction);
 
@@ -56,7 +65,7 @@ public static class SlideshowRenderer
         {
             using (var encoder = new FfmpegEncoder(FfmpegLocator.Find(),
                        EncoderArguments(width, height, fps, request.AudioPath, plan.AudioStart, total, partial,
-                                          cfg.AudioFadeIn, cfg.AudioFadeOut)))
+                                          cfg.AudioFadeIn, cfg.AudioFadeOut, request.Encoding ?? VideoEncoding.Default)))
             {
                 // Vários quadros são desenhados ao mesmo tempo (um por núcleo) e um único fio os entrega ao
                 // ffmpeg na ordem certa. Os quadros em andamento ocupam "espaços" (bitmaps) reutilizados.
@@ -176,7 +185,7 @@ public static class SlideshowRenderer
 
     private static List<string> EncoderArguments(int width, int height, int fps, string? audio, double audioStart,
                                                  double total, string output,
-                                                 double fadeInSeconds, double fadeOutSeconds)
+                                                 double fadeInSeconds, double fadeOutSeconds, VideoEncoding encoding)
     {
         var args = new List<string>
         {
@@ -197,7 +206,9 @@ public static class SlideshowRenderer
         {
             args.Add("-an");
         }
-        args.AddRange(["-c:v", "libx264", "-crf", "20", "-preset", "veryfast", "-pix_fmt", "yuv420p", output]);
+        args.AddRange(["-c:v", encoding.Codec, "-crf", encoding.Crf.ToString(), "-preset", encoding.Preset, "-pix_fmt", "yuv420p"]);
+        if (encoding.Codec == "libx265") args.AddRange(["-tag:v", "hvc1"]); // o QuickTime/iPhone/Mac só reconhecem HEVC com esta etiqueta
+        args.Add(output);
         return args;
     }
 

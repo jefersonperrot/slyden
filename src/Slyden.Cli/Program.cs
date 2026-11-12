@@ -7,7 +7,7 @@ using Slyden.Core.Render;
 const string Usage = """
     Uso:
       slyden beats  <audio> [--photos N] [--per auto|2|4|8] [--json saida.json]
-      slyden render <pasta_fotos> <saida.mp4> [--audio musica.mp3] [--config config.json] [--format 16:9|9:16|1:1] [--fonts pasta]
+      slyden render <pasta_fotos> <saida.mp4> [--audio musica.mp3] [--config config.json] [--format 16:9|9:16|1:1] [--fonts pasta] [--codec libx264|libx265] [--crf N] [--preset veryfast|medium|slow...]
 
     Sem --audio, o vídeo sai mudo e usa o "bpm" da configuração.
     Se o --config indicado não existir, é criado com os padrões para você editar.
@@ -74,7 +74,8 @@ static int Render(string[] args)
 {
     if (args.Length < 3) { Console.Error.WriteLine(Usage); return 1; }
     string folder = args[1], output = args[2];
-    string? audio = null, configPath = null, format = null;
+    string? audio = null, configPath = null, format = null, codec = null, preset = null;
+    int? crf = null;
     var fontFolders = new List<string>();
     for (int i = 3; i < args.Length; i++)
     {
@@ -84,6 +85,9 @@ static int Render(string[] args)
             case "--fonts": fontFolders.Add(args[++i]); break;
             case "--config": configPath = args[++i]; break;
             case "--format": format = args[++i]; break;
+            case "--codec": codec = args[++i]; break;
+            case "--crf": crf = int.Parse(args[++i], CultureInfo.InvariantCulture); break;
+            case "--preset": preset = args[++i]; break;
             default: Console.Error.WriteLine($"Opção desconhecida: {args[i]}"); return 1;
         }
     }
@@ -119,7 +123,8 @@ static int Render(string[] args)
     Console.CancelKeyPress += (_, e) => { e.Cancel = true; cts.Cancel(); };
 
     var summary = SlideshowRenderer.Render(
-        new RenderRequest(folder, output, config, audio, FontFolders: fontFolders), progress, cts.Token);
+        new RenderRequest(folder, output, config, audio, FontFolders: fontFolders,
+                          Encoding: new VideoEncoding(codec ?? "libx264", crf ?? 20, preset ?? "veryfast")), progress, cts.Token);
     Console.WriteLine(string.Create(CultureInfo.InvariantCulture,
         $"\rok: {output} | {summary.DurationSeconds:F0}s | {summary.Slides} fotos | tempo ~{summary.Tempo:F0} BPM | troca a cada {summary.BeatsPerPhoto} batidas   "));
     foreach (var warning in summary.Warnings) Console.WriteLine($"aviso: {warning}");
