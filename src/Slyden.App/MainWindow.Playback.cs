@@ -43,6 +43,7 @@ public partial class MainWindow
     private async Task StartPlaybackAsync()
     {
         if (_project is null || _cfg.Photos.Count == 0) return;
+        StopListening();
         _preparing = true;
         PlayButton.IsEnabled = false;
 
@@ -236,6 +237,7 @@ public partial class MainWindow
 
     private void StopPlayback(bool refresh)
     {
+        StopListening();
         if (!_playing && _preview is null) return;
         _playing = false;
         _playTimer?.Stop();

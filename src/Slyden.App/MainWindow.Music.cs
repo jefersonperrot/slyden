@@ -171,6 +171,8 @@ public partial class MainWindow
             return b;
         }
         var buttons = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 4 };
+        var listen = Small("▶ Ouvir", "Toca só o trecho escolhido desta música", () => { });
+        buttons.Children.Add(listen);
         buttons.Children.Add(Small("▲", "Subir (toca antes)", () => MoveTrack(index, -1), index > 0));
         buttons.Children.Add(Small("▼", "Descer (toca depois)", () => MoveTrack(index, 1), index < _cfg.Tracks.Count - 1));
         buttons.Children.Add(Small("✕", "Tirar esta música do projeto", () => RemoveTrack(index)));
@@ -194,6 +196,7 @@ public partial class MainWindow
         _trackWaves.Add(wave);
         FillWave(wave, track);
         wave.SetRange(track.Start, track.End ?? 0);
+        listen.Click += (_, _) => ToggleListen(track, wave, listen);
         wave.Dragging += (s, e) => SetFields(start, end, s, e, wave.Duration);
         wave.Committed += (s, e) =>
         {
@@ -241,6 +244,59 @@ public partial class MainWindow
             Padding = new Thickness(8),
             Child = row,
         };
+    }
+
+    // ---------- ouvir só o trecho de uma música ----------
+
+    private AudioPlayer? _listenPlayer;
+    private WaveformView? _listenWave;
+    private Button? _listenButton;
+    private double _listenFrom, _listenLength;
+    private Avalonia.Threading.DispatcherTimer? _listenTimer;
+
+    private void ToggleListen(MusicTrack track, WaveformView wave, Button button)
+    {
+        bool same = _listenButton == button;
+        StopListening();
+        if (same) return;
+        if (!File.Exists(track.Path)) { MusicSummary.Text = "⚠ Música não encontrada: " + track.Path; return; }
+
+        StopPlayback(refresh: true); // a prévia do vídeo e a escuta não tocam juntas
+        double from = wave.Duration > 0 ? wave.Start : track.Start;
+        double to = wave.Duration > 0 ? wave.End : (track.End ?? from + 30);
+        var player = new AudioPlayer();
+        if (!player.Start(track.Path, from, out var error))
+        {
+            player.Dispose();
+            MusicSummary.Text = "Não foi possível tocar: " + error;
+            return;
+        }
+        (_listenPlayer, _listenWave, _listenButton) = (player, wave, button);
+        (_listenFrom, _listenLength) = (from, Math.Max(0.5, to - from));
+        button.Content = "■ Parar";
+        _listenTimer ??= new Avalonia.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(40) };
+        _listenTimer.Tick -= OnListenTick;
+        _listenTimer.Tick += OnListenTick;
+        _listenTimer.Start();
+    }
+
+    private void OnListenTick(object? sender, EventArgs e)
+    {
+        if (_listenPlayer is not { } player) { StopListening(); return; }
+        double played = player.Elapsed;
+        if (played >= _listenLength) { StopListening(); return; }
+        if (_listenWave is { } wave) wave.Playhead = _listenFrom + played;
+    }
+
+    private void StopListening()
+    {
+        _listenTimer?.Stop();
+        _listenPlayer?.Dispose();
+        _listenPlayer = null;
+        if (_listenWave is { } wave) wave.Playhead = -1;
+        if (_listenButton is { } button) button.Content = "▶ Ouvir";
+        _listenWave = null;
+        _listenButton = null;
     }
 
     /// <summary>Passa a onda e as batidas da música (se já foram analisadas) para o desenho.</summary>

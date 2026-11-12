@@ -17,6 +17,15 @@ public sealed class WaveformView : Control
     private double _duration, _start, _end;
     private int _drag; // 0 = nada, 1 = início, 2 = fim
 
+    private double _playhead = -1;
+
+    /// <summary>Posição de escuta em segundos do arquivo; negativo = sem marcador.</summary>
+    public double Playhead
+    {
+        get => _playhead;
+        set { _playhead = value; InvalidateVisual(); }
+    }
+
     public Color Accent { get; set; } = Color.Parse("#3B8BFF");
     public double Start => _start;
     public double End => _end;
@@ -76,6 +85,9 @@ public sealed class WaveformView : Control
         var shade = new SolidColorBrush(Color.Parse("#B0141417")); // o que fica fora do corte
         context.DrawRectangle(shade, null, new Rect(0, 0, xs, h));
         context.DrawRectangle(shade, null, new Rect(xe, 0, Math.Max(0, w - xe), h));
+
+        if (_playhead >= 0)
+            context.DrawRectangle(new SolidColorBrush(Color.Parse("#FFD24A")), null, new Rect(Math.Clamp(XOf(_playhead) - 0.75, 0, w - 1.5), 0, 1.5, h));
 
         var handle = new SolidColorBrush(Colors.White);
         foreach (double x in new[] { xs, xe })
