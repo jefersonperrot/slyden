@@ -222,6 +222,31 @@ public partial class MainWindow
         range.Children.Add(start);
         range.Children.Add(endLabel);
         range.Children.Add(end);
+        if (index > 0)
+        {
+            // música por trecho: em que foto esta música entra (as fotos de cada trecho se espalham só pela música dele)
+            range.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
+            var photoLabel = Label("Entra na foto nº (0 = auto)");
+            var photo = new NumericUpDown
+            {
+                Minimum = 0, Maximum = 9999, Increment = 1, FormatString = "0", Value = track.StartPhoto ?? 0,
+                HorizontalAlignment = HorizontalAlignment.Stretch,
+            };
+            ToolTip.SetTip(photo, "Número da foto em que esta música começa. As fotos de cada trecho se espalham só pela música dele, e a troca de música cai na troca de foto. 0 = automático (proporcional ao tempo).");
+            photo.ValueChanged += (_, _) =>
+            {
+                if (_loading || _project is null) return;
+                int v = (int)Num(photo);
+                track.StartPhoto = v > 0 ? v : null;
+                MarkDirty();
+                _ = RefreshMusicInfoAsync();
+            };
+            Grid.SetRow(photoLabel, 2);
+            Grid.SetRow(photo, 2);
+            Grid.SetColumn(photo, 1);
+            range.Children.Add(photoLabel);
+            range.Children.Add(photo);
+        }
 
         var info = new AvaloniaText { TextWrapping = TextWrapping.Wrap };
         info.Classes.Add("hint");
@@ -348,9 +373,14 @@ public partial class MainWindow
             if (version != _musicInfoVersion || music.Bed.Segments.Count != _trackInfo.Count) return;
 
             var segments = music.Bed.Segments;
+            int photoCount = _cfg.Photos.Count;
+            int skip = photoCount > 1 && _cfg.Photos[0].IntroSeconds is > 0 ? 1 : 0;
+            var firstSlides = MusicSections.FirstSlides(_cfg.Tracks, music.Bed.Analysis, photoCount - skip, skip);
             for (int i = 0; i < segments.Count; i++)
             {
                 var s = segments[i];
+                string photos = firstSlides is null ? "" :
+                    $" · fotos {(i == 0 ? 1 : firstSlides[i] + skip + 1)} a {(i + 1 < firstSlides.Length ? firstSlides[i + 1] + skip : photoCount)}";
                 double full = _analyses.TryGetValue(s.Track.Path, out var a) ? a.Analysis.DurationSeconds : s.SourceEnd;
                 if (i < _trackWaves.Count)
                 {
@@ -358,12 +388,15 @@ public partial class MainWindow
                     _trackWaves[i].SetRange(s.SourceStart, s.SourceEnd); // o trecho já ajustado às batidas
                 }
                 _trackInfo[i].Text = $"Arquivo de {Clock(full)} · usa de {Clock(s.SourceStart)} a {Clock(s.SourceEnd)} ({Clock(s.Length)}) · " +
-                                     $"toca de {Clock(s.Offset)} a {Clock(s.End)} da trilha";
+                                     $"toca de {Clock(s.Offset)} a {Clock(s.End)} da trilha{photos}";
             }
             MusicSummary.Text = segments.Count == 1
                 ? $"Trilha de {Clock(music.Bed.Duration)}. Início e fim se ajustam à batida mais próxima."
                 : $"Trilha de {Clock(music.Bed.Duration)} com {segments.Count} músicas em sequência, com cruzamento de {Math.Min(_cfg.MusicCrossfade, 30):0.#} s. " +
-                  "Início e fim de cada uma se ajustam à batida; a música seguinte entra numa batida da anterior.";
+                  "Início e fim de cada uma se ajustam à batida; a música seguinte entra numa batida da anterior." +
+                  (firstSlides is null
+                      ? " Para dividir as fotos entre as músicas, escolha em que foto cada uma entra."
+                      : " As fotos estão divididas entre as músicas: cada grupo se espalha só pela música dele.");
             DrawMusicTimeline(music.Bed);
         }
         catch (Exception ex)

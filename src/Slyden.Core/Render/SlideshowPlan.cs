@@ -62,7 +62,14 @@ public sealed class SlideshowPlan
             beat = BeatSecondsOf(analysis, cfg.Bpm);
             tempo = analysis.Tempo;
             CutPlan plan;
-            if (rest.Any(s => s.Seconds is not null))
+            var sectionStarts = MusicSections.FirstSlides(cfg.Tracks, analysis, rest.Count, intro > 0 ? 1 : 0);
+            if (sectionStarts is not null)
+            {
+                // música por trecho: cada grupo de fotos se espalha só pela sua música; a troca de música cai numa troca de foto
+                plan = new CutPlan(4, 0, PlanSections(analysis, sectionStarts, rest, beat));
+                lengths = rest.Select(_ => 1).ToList();
+            }
+            else if (rest.Any(s => s.Seconds is not null))
             {
                 // slides com duração própria: cada slide ocupa um intervalo de batidas (um intervalo por slide)
                 var fixedBeats = rest.Select(s => s.Seconds is { } sec ? BeatsFor(sec, beat) : (int?)null).ToList();
@@ -128,6 +135,33 @@ public sealed class SlideshowPlan
             IntroSeconds = intro,
         };
     }
+    /// <summary>Um instante de início por slide mais o fim: cada grupo de slides ocupa o tempo da sua música.</summary>
+    private static double[] PlanSections(BeatAnalysis a, int[] first, IReadOnlyList<ResolvedSlide> rest, double beat)
+    {
+        var cuts = new List<double>();
+        for (int k = 0; k < first.Length; k++)
+        {
+            int from = first[k], to = k + 1 < first.Length ? first[k + 1] : rest.Count, n = to - from;
+            double start = k == 0 ? 0 : a.TrackStarts![k];
+            double end = k + 1 < first.Length ? a.TrackStarts![k + 1] : a.DurationSeconds;
+
+            var idx = Enumerable.Range(0, a.BeatTimes.Length).Where(i => a.BeatTimes[i] >= start - 0.01 && a.BeatTimes[i] < end).ToArray();
+            var sub = new BeatAnalysis(a.Tempo, idx.Select(i => a.BeatTimes[i]).ToArray(), idx.Select(i => a.BeatStrengths[i]).ToArray(), end);
+            var slice = rest.Skip(from).Take(n).ToList();
+
+            double[] c = idx.Length == 0 ? [] : CutPlanner.PlanMixed(sub,
+                slice.Select(s => s.Seconds is { } sec ? BeatsFor(sec, beat) : (int?)null).ToList(),
+                slice.Select(s => s.Length).ToList(), fit: true, beatsPerPhoto: null).CutTimes;
+            bool increasing = c.Length == n + 1 && Enumerable.Range(1, n).All(i => c[i] > c[i - 1]);
+            if (!increasing) c = Enumerable.Range(0, n + 1).Select(i => start + (end - start) * i / n).ToArray(); // sem batidas: divide o tempo igualmente
+
+            cuts.AddRange(k + 1 < first.Length ? c.Take(n) : c); // o fim de um trecho é o começo do próximo
+        }
+        for (int i = 1; i < cuts.Count; i++)
+            if (cuts[i] <= cuts[i - 1]) cuts[i] = cuts[i - 1] + 0.25; // segurança: nunca um slide de duração zero
+        return cuts.ToArray();
+    }
+
     /// <summary>
     /// Instantes em que cada slide começa (e o fim do último). Um slide com length 2 ocupa dois intervalos da grade de batidas.
     /// Para no primeiro slide que não couber na música.

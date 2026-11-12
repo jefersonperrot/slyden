@@ -169,6 +169,7 @@ public sealed class SlideshowConfig
         {
             if (string.IsNullOrWhiteSpace(t.Path)) throw new InvalidDataException("Música sem caminho de arquivo.");
             if (t.Start < 0) throw new InvalidDataException($"{t.Path}: start não pode ser negativo.");
+            if (t.StartPhoto is < 1) throw new InvalidDataException($"{t.Path}: start_photo deve ser 1 ou mais.");
             if (t.End is { } e && e <= t.Start) throw new InvalidDataException($"{t.Path}: end deve ser maior que start.");
         }
         if (SecondsPerPhoto is <= 0) throw new InvalidDataException("seconds_per_photo deve ser maior que zero.");

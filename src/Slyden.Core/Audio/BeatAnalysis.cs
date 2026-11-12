@@ -4,7 +4,9 @@ namespace Slyden.Core.Audio;
 /// <param name="BeatTimes">Instante de cada batida, em segundos.</param>
 /// <param name="BeatStrengths">Força de onset em cada batida (para achar o início do compasso).</param>
 /// <param name="DurationSeconds">Duração do áudio.</param>
-public sealed record BeatAnalysis(double Tempo, double[] BeatTimes, double[] BeatStrengths, double DurationSeconds);
+/// <param name="TrackStarts">Só na trilha de várias músicas (<see cref="MusicBed"/>): instante em que cada música começa.</param>
+public sealed record BeatAnalysis(double Tempo, double[] BeatTimes, double[] BeatStrengths, double DurationSeconds,
+                                  double[]? TrackStarts = null);
 
 public static class BeatAnalyzer
 {

@@ -1,5 +1,6 @@
 using Slyden.Core.Audio;
 using Slyden.Core.Config;
+using Slyden.Core.Render;
 
 namespace Slyden.Tests;
 
@@ -129,6 +130,43 @@ public class MusicBedTests
         Assert.InRange(peaks.Length, 2 * Waveform.PerSecond, 2 * Waveform.PerSecond + 1); // 22050/20 não é exato: sobra uma fatia
         Assert.Equal(0.5f, peaks[0], 3);
         Assert.Equal(1f, peaks[^1], 3);
+    }
+
+    private static SlideshowConfig Photos(int count, params MusicTrack[] tracks)
+    {
+        var cfg = new SlideshowConfig
+        {
+            Default = { Effects = [EffectKind.None], Transition = TransitionKind.Cut },
+            Photos = Enumerable.Range(0, count).Select(i => new PhotoSpec { File = $"{i}.jpg" }).ToList(),
+        };
+        cfg.Tracks.AddRange(tracks);
+        return cfg;
+    }
+
+    [Fact]
+    public void Music_by_section_puts_the_change_of_song_on_the_change_of_photo()
+    {
+        var tracks = new[] { new MusicTrack { Path = "a" }, new MusicTrack { Path = "b", StartPhoto = 4 } };
+        var cfg = Photos(10, tracks);
+        var bed = MusicBed.Plan(cfg.Tracks, 0, Library(("a", 20), ("b", 40)));
+        var plan = SlideshowPlan.Build(cfg, 30, bed.Analysis);
+        Assert.Equal(10, plan.Slides.Count);
+        // as fotos 1–3 ficam na música A (0–20 s); a foto 4 começa quando a B entra
+        Assert.InRange(plan.Boundaries[3], 19.9, 20.8);
+        Assert.Equal(40 + 20, plan.Boundaries[^1], 0);
+        for (int i = 1; i < plan.Edges.Length; i++) Assert.True(plan.Edges[i] > plan.Edges[i - 1]);
+        // 3 fotos em 20 s e 7 em 40 s: as fotos do trecho B duram menos que... mais que as do A? (40/7 ≈ 5,7 s contra 20/3 ≈ 6,7 s)
+        Assert.True(plan.Boundaries[4] - plan.Boundaries[3] < plan.Boundaries[1] - plan.Boundaries[0]);
+    }
+
+    [Fact]
+    public void Tracks_without_a_chosen_photo_enter_in_proportion_to_their_length_once_sections_are_active()
+    {
+        var cfg = Photos(12, new MusicTrack { Path = "a" }, new MusicTrack { Path = "b" }, new MusicTrack { Path = "c", StartPhoto = 10 });
+        var bed = MusicBed.Plan(cfg.Tracks, 0, Library(("a", 30), ("b", 30), ("c", 30)));
+        var first = MusicSections.FirstSlides(cfg.Tracks, bed.Analysis, 12, 0)!;
+        Assert.Equal([0, 4, 9], first); // b entra na marca de 1/3 do tempo (foto 5); c foi pedida na foto 10
+        Assert.Null(MusicSections.FirstSlides([new MusicTrack { Path = "a" }, new MusicTrack { Path = "b" }], bed.Analysis, 12, 0)); // nenhuma foto escolhida: modo antigo
     }
 
     [Fact]

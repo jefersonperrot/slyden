@@ -104,7 +104,8 @@ public sealed class MusicBed
         }
 
         double tempo = tempoByLength.MaxBy(t => t.Length).Tempo;
-        var combined = new BeatAnalysis(tempo, beats.Select(b => b.Time).ToArray(), beats.Select(b => b.Strength).ToArray(), prevEnd);
+        var combined = new BeatAnalysis(tempo, beats.Select(b => b.Time).ToArray(), beats.Select(b => b.Strength).ToArray(), prevEnd,
+                                      segments.Select(s => s.Offset).ToArray());
         return new MusicBed(segments, combined);
     }
 
