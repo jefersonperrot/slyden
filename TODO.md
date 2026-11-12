@@ -124,7 +124,8 @@ Direção visual: tema escuro no estilo dos aplicativos Adobe. Maquete aprovada 
 - [x] Duração própria por slide (aba Slide > Duração própria (s); com música arredonda para a batida, sem música é exata) e capa antes da música (1ª foto: capa dura X s sem música, depois a música e as fotos começam; fade-in da imagem em segundos, independente do fade dos textos); prévia e exportação; 196 testes
 - [x] Várias músicas no projeto (etapa 1): lista na aba Padrão > Músicas (adicionar várias de uma vez, subir/descer, tirar), início e fim de cada uma ajustados à batida, cruzamento (fade) entre elas e a próxima entra numa batida da anterior; as batidas das faixas viram uma análise só (`MusicBed`), então os cortes das fotos seguem a música que está tocando; prévia e exportação usam a trilha montada; barra colorida com um bloco por música; projetos antigos com uma música continuam abrindo; 207 testes
 - [ ] **Testar as músicas na tela** (adicionar 2 ou 3, cortar início/fim, subir/descer, tocar a prévia, exportar)
-- [ ] Músicas, próximas etapas: onda do áudio na linha do tempo com alças para arrastar início/fim; ouvir só um trecho da faixa; música diferente por trecho do vídeo; sons por cima (voz do noivo) com a música abaixando enquanto toca
+- [x] Onda do áudio em cada música (alças brancas arrastáveis para início e fim, grudam nas batidas; trecho fora do corte escurecido); 208 testes
+- [ ] Músicas, próximas etapas: ouvir só um trecho da faixa; onda da trilha inteira com marcas das fotos; música diferente por trecho do vídeo; sons por cima (voz do noivo) com a música abaixando enquanto toca
 - [ ] Configurações: pasta padrão dos projetos, pasta de fontes extras, idioma, atalhos
 - [ ] Mais estilos de animação de texto (subir suavemente, digitar, zoom); várias configurações salvas (modelos com nome)
 - [ ] Arrastar também o tamanho do texto (alças); cursor de mão ao passar sobre o texto; fontes dos textos de exemplo da capa que existam também no Mac

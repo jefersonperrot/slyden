@@ -31,6 +31,7 @@ public partial class MainWindow
     private byte[] _copyBuffer = [];
     private DispatcherTimer? _playTimer;
     private readonly Dictionary<string, (DateTime Stamp, BeatAnalysis Analysis)> _analyses = [];
+    private readonly Dictionary<string, float[]> _peaks = []; // onda de cada música (mesma chave de _analyses)
 
     private async Task TogglePlayAsync()
     {
@@ -128,8 +129,13 @@ public partial class MainWindow
     {
         var stamp = File.GetLastWriteTimeUtc(path);
         if (_analyses.TryGetValue(path, out var cached) && cached.Stamp == stamp) return cached.Analysis;
-        var analysis = await Task.Run(() => BeatAnalyzer.Analyze(AudioDecoder.DecodeMono(path)));
+        var (analysis, peaks) = await Task.Run(() =>
+        {
+            var samples = AudioDecoder.DecodeMono(path);
+            return (BeatAnalyzer.Analyze(samples), Waveform.Peaks(samples, BeatAnalyzer.SampleRate));
+        });
         _analyses[path] = (stamp, analysis);
+        _peaks[path] = peaks;
         return analysis;
     }
 

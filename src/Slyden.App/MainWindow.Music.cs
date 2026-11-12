@@ -18,6 +18,7 @@ public partial class MainWindow
     private MusicState? _music;
     private int _musicInfoVersion;
     private readonly List<AvaloniaText> _trackInfo = [];
+    private readonly List<WaveformView> _trackWaves = [];
 
     private static readonly Color[] TrackColors =
         [Color.Parse("#3B8BFF"), Color.Parse("#E8A33A"), Color.Parse("#4FBF8F"), Color.Parse("#C96BDB"), Color.Parse("#E5605A"), Color.Parse("#4FB8D6")];
@@ -130,6 +131,7 @@ public partial class MainWindow
     {
         TrackList.Children.Clear();
         _trackInfo.Clear();
+        _trackWaves.Clear();
         CrossfadeRow.IsVisible = _cfg.Tracks.Count > 1;
         MusicTimeline.Children.Clear();
         MusicTimeline.ColumnDefinitions.Clear();
@@ -187,8 +189,22 @@ public partial class MainWindow
         var end = Field(track.End ?? 0);
         ToolTip.SetTip(start, "Onde a música começa a tocar (segundos do arquivo). Ajusta-se à batida mais próxima.");
         ToolTip.SetTip(end, "Onde a música termina (segundos do arquivo). 0 = vai até o fim do arquivo.");
-        start.ValueChanged += (_, _) => OnTrackRangeChanged(track, start, end, changedStart: true);
-        end.ValueChanged += (_, _) => OnTrackRangeChanged(track, start, end, changedStart: false);
+        var wave = new WaveformView { Accent = TrackColors[index % TrackColors.Length], Height = WaveformView.ViewHeight };
+        ToolTip.SetTip(wave, "Arraste as alças brancas para escolher onde a música começa e termina. Elas grudam nas batidas.");
+        _trackWaves.Add(wave);
+        FillWave(wave, track);
+        wave.SetRange(track.Start, track.End ?? 0);
+        wave.Dragging += (s, e) => SetFields(start, end, s, e, wave.Duration);
+        wave.Committed += (s, e) =>
+        {
+            if (_loading || _project is null) return;
+            track.Start = s;
+            track.End = e >= wave.Duration - 0.05 ? null : e;
+            MarkDirty();
+            _ = RefreshMusicInfoAsync();
+        };
+        start.ValueChanged += (_, _) => OnTrackRangeChanged(track, start, end, wave);
+        end.ValueChanged += (_, _) => OnTrackRangeChanged(track, start, end, wave);
 
         // um campo por linha: no painel estreito, dois lado a lado não deixavam espaço para ver o número
         var range = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*"), RowDefinitions = new RowDefinitions("Auto,Auto"), ColumnSpacing = 8, RowSpacing = 6 };
@@ -210,6 +226,7 @@ public partial class MainWindow
 
         var body = new StackPanel { Spacing = 6 };
         body.Children.Add(header);
+        body.Children.Add(wave);
         body.Children.Add(range);
         body.Children.Add(info);
 
@@ -226,7 +243,23 @@ public partial class MainWindow
         };
     }
 
-    private void OnTrackRangeChanged(MusicTrack track, NumericUpDown start, NumericUpDown end, bool changedStart)
+    /// <summary>Passa a onda e as batidas da música (se já foram analisadas) para o desenho.</summary>
+    private void FillWave(WaveformView wave, MusicTrack track)
+    {
+        if (_peaks.TryGetValue(track.Path, out var peaks) && _analyses.TryGetValue(track.Path, out var a))
+            wave.SetAudio(peaks, a.Analysis.BeatTimes, a.Analysis.DurationSeconds);
+    }
+
+    private void SetFields(NumericUpDown start, NumericUpDown end, double s, double e, double duration)
+    {
+        bool was = _loading;
+        _loading = true;
+        start.Value = (decimal)Math.Round(s, 2);
+        end.Value = e >= duration - 0.05 ? 0 : (decimal)Math.Round(e, 2);
+        _loading = was;
+    }
+
+    private void OnTrackRangeChanged(MusicTrack track, NumericUpDown start, NumericUpDown end, WaveformView wave)
     {
         if (_loading || _project is null) return;
         double s = Num(start), e = Num(end);
@@ -241,6 +274,7 @@ public partial class MainWindow
         }
         track.Start = s;
         track.End = e > 0 ? e : null;
+        wave.SetRange(s, e);
         MarkDirty();
         _ = RefreshMusicInfoAsync();
     }
@@ -262,6 +296,11 @@ public partial class MainWindow
             {
                 var s = segments[i];
                 double full = _analyses.TryGetValue(s.Track.Path, out var a) ? a.Analysis.DurationSeconds : s.SourceEnd;
+                if (i < _trackWaves.Count)
+                {
+                    FillWave(_trackWaves[i], s.Track);
+                    _trackWaves[i].SetRange(s.SourceStart, s.SourceEnd); // o trecho já ajustado às batidas
+                }
                 _trackInfo[i].Text = $"Arquivo de {Clock(full)} · usa de {Clock(s.SourceStart)} a {Clock(s.SourceEnd)} ({Clock(s.Length)}) · " +
                                      $"toca de {Clock(s.Offset)} a {Clock(s.End)} da trilha";
             }

@@ -121,6 +121,17 @@ public class MusicBedTests
     }
 
     [Fact]
+    public void Waveform_peaks_follow_the_loudness_per_slice_and_are_normalised()
+    {
+        var samples = new float[22050 * 2]; // 2 s: o primeiro segundo baixo (0,25), o segundo alto (0,5)
+        for (int i = 0; i < samples.Length; i++) samples[i] = i < 22050 ? 0.25f : -0.5f;
+        var peaks = Waveform.Peaks(samples, 22050);
+        Assert.InRange(peaks.Length, 2 * Waveform.PerSecond, 2 * Waveform.PerSecond + 1); // 22050/20 não é exato: sobra uma fatia
+        Assert.Equal(0.5f, peaks[0], 3);
+        Assert.Equal(1f, peaks[^1], 3);
+    }
+
+    [Fact]
     public void Tracks_are_validated_and_saved_in_the_config()
     {
         var cfg = new SlideshowConfig { Photos = [new PhotoSpec { File = "1.jpg" }] };
