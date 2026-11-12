@@ -26,6 +26,7 @@ public partial class MainWindow
     private void InitMusic()
     {
         AddTrackButton.Click += async (_, _) => await AddTracksAsync();
+        MusicStrip.TrackClicked += GoToTrack;
         CrossfadeValue.ValueChanged += (_, _) =>
         {
             if (_loading || _project is null) return;
@@ -33,6 +34,28 @@ public partial class MainWindow
             MarkDirty();
             _ = RefreshMusicInfoAsync();
         };
+    }
+
+    /// <summary>Clique na faixa da trilha: abre a aba Padrão, rola até a música clicada e a destaca por um instante.</summary>
+    private void GoToTrack(int index)
+    {
+        ShowTab(2);
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            if (index < 0 || index >= TrackList.Children.Count) return;
+            var row = TrackList.Children[index];
+            row.BringIntoView();
+            if (row is not Border border) return;
+            var normal = border.Background;
+            border.Background = new SolidColorBrush(Color.Parse("#3B4A66"));
+            var timer = new Avalonia.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(900) };
+            timer.Tick += (_, _) =>
+            {
+                timer.Stop();
+                border.Background = normal;
+            };
+            timer.Start();
+        }, Avalonia.Threading.DispatcherPriority.Background);
     }
 
     // ---------- trilha pronta (com cache) ----------
@@ -136,6 +159,7 @@ public partial class MainWindow
         MusicTimeline.Children.Clear();
         MusicTimeline.ColumnDefinitions.Clear();
         MusicTimeline.IsVisible = false;
+        if (_cfg.Tracks.Count == 0) MusicStrip.IsVisible = false;
         MusicSummary.Text = _cfg.Tracks.Count == 0 ? "Nenhuma música. Clique em + Adicionar música (ou use o menu Projeto)." : "";
 
         for (int i = 0; i < _cfg.Tracks.Count; i++)
@@ -402,12 +426,15 @@ public partial class MainWindow
                       ? " Para dividir as fotos entre as músicas, escolha em que foto cada uma entra."
                       : " As fotos estão divididas entre as músicas: cada grupo se espalha só pela música dele.");
             DrawMusicTimeline(music.Bed);
+            MusicStrip.Set(music.Bed, p => _peaks.TryGetValue(p, out var peaks) ? peaks : null, TrackColors);
+            MusicStrip.IsVisible = true;
         }
         catch (Exception ex)
         {
             if (version != _musicInfoVersion) return;
             MusicSummary.Text = "⚠ " + ex.Message;
             MusicTimeline.IsVisible = false;
+            MusicStrip.IsVisible = false;
         }
     }
 

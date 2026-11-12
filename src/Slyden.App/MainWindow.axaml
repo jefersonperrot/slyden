@@ -113,7 +113,7 @@
             </UniformGrid>
           </Border>
 
-          <ScrollViewer Grid.Row="1">
+          <ScrollViewer x:Name="PanelScroll" Grid.Row="1">
             <Panel Margin="14">
 
               <!-- aba Slide -->
@@ -422,6 +422,7 @@
           <Border x:Name="DropMarker" Width="3" Height="104" Background="#3B8BFF" CornerRadius="2" IsVisible="False" Canvas.Top="4" />
         </Canvas>
         </Grid>
+        <local:MusicStripView x:Name="MusicStrip" IsVisible="False" />
       </StackPanel>
     </Border>
     <!-- novo projeto (cobre tudo) -->

@@ -128,6 +128,8 @@ Direção visual: tema escuro no estilo dos aplicativos Adobe. Maquete aprovada 
 - [x] Sons por cima da música (aba Padrão > Sons por cima): voz, efeitos etc.; cada som entra no início de uma foto (Entra na foto nº + espera), com corte (início/fim do trecho), volume e quanto a música abaixa (rampa suave de 0,35 s); a prévia toca o mesmo áudio montado da exportação (AudioMix); funciona também sem música; 215 testes
 - [x] Onda e botão ▶ Ouvir em cada som por cima (alças de início/fim, igual às músicas)
 - [ ] Sons por cima, depois: mostrar na linha do tempo onde cada som toca; arrastar o som para outra foto
+- [x] Faixa da trilha de música abaixo da linha do tempo das fotos (MusicStripView): onda da trilha inteira, marcas das batidas, divisão e nome de cada música; clicar numa música abre a aba Padrão, rola até ela e a destaca
+- [ ] Faixa da trilha, depois: marcar onde cada foto troca e onde cada som por cima toca; marcador de posição durante a prévia; clicar para pular a prévia até ali
 - [ ] **Testar as músicas na tela** (adicionar 2 ou 3, cortar início/fim, subir/descer, tocar a prévia, exportar)
 - [x] Onda do áudio em cada música (alças brancas arrastáveis para início e fim, grudam nas batidas; trecho fora do corte escurecido); 208 testes
 - [ ] Músicas, próximas etapas: onda da trilha inteira com marcas das fotos
