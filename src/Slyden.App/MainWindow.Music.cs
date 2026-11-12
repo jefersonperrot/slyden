@@ -190,15 +190,18 @@ public partial class MainWindow
         start.ValueChanged += (_, _) => OnTrackRangeChanged(track, start, end, changedStart: true);
         end.ValueChanged += (_, _) => OnTrackRangeChanged(track, start, end, changedStart: false);
 
-        var range = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*,Auto,*"), ColumnSpacing = 6 };
+        // um campo por linha: no painel estreito, dois lado a lado não deixavam espaço para ver o número
+        var range = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*"), RowDefinitions = new RowDefinitions("Auto,Auto"), ColumnSpacing = 8, RowSpacing = 6 };
         AvaloniaText Label(string t) { var l = new AvaloniaText { Text = t, VerticalAlignment = VerticalAlignment.Center }; l.Classes.Add("dim"); return l; }
-        range.Children.Add(Label("Início (s)"));
+        var startLabel = Label("Início (s)");
+        var endLabel = Label("Fim (s), 0 = até o fim");
+        Grid.SetRow(endLabel, 1);
         Grid.SetColumn(start, 1);
+        Grid.SetRow(end, 1);
+        Grid.SetColumn(end, 1);
+        range.Children.Add(startLabel);
         range.Children.Add(start);
-        var endLabel = Label("Fim (s)");
-        Grid.SetColumn(endLabel, 2);
         range.Children.Add(endLabel);
-        Grid.SetColumn(end, 3);
         range.Children.Add(end);
 
         var info = new AvaloniaText { TextWrapping = TextWrapping.Wrap };
