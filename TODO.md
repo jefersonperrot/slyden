@@ -113,6 +113,8 @@ Direção visual: tema escuro no estilo dos aplicativos Adobe. Maquete aprovada 
 - [x] Tela de Configurações (botão ⚙ no topo, fora dos projetos): formato, resolução, efeitos, transição, foto/fundo/sombra, música e estilo dos textos novos, salvos na hora; a seção no painel Padrão saiu (menos poluição)
 - [x] Presets com nome (ex.: Casamento, Clientes): Configurações > Presets (novo, duplicar, novo a partir do projeto aberto, renomear, excluir, definir o padrão); a tela Novo projeto escolhe o preset; o projeto guarda o preset usado (textos novos seguem o estilo dele); o defaults.json antigo vira o primeiro preset; 189 testes
 - [x] Barra de menus (Arquivo, Editar, Projeto, Ajuda com atalhos e Sobre); o topo ficou só com Desfazer/Refazer/Salvar/Exportar
+- [x] Tela de projetos em grade de cartões com miniatura (1ª foto), cartão + Novo projeto, busca e ordenação; botões Desfazer/Salvar/Exportar só aparecem com um projeto aberto
+- [ ] Tela de projetos: coluna lateral (exportações recentes, abrir .slyden de qualquer pasta, atalhos de presets); botões do cartão só ao passar o mouse
 - [ ] Configurações: pasta padrão dos projetos, pasta de fontes extras, idioma, atalhos
 - [ ] Mais estilos de animação de texto (subir suavemente, digitar, zoom); várias configurações salvas (modelos com nome)
 - [ ] Arrastar também o tamanho do texto (alças); cursor de mão ao passar sobre o texto; fontes dos textos de exemplo da capa que existam também no Mac

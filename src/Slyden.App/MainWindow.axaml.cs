@@ -52,14 +52,21 @@ public sealed class TextItem(SlideText text) : Notifying
     public void Refresh() => Changed(nameof(Label));
 }
 
+/// <summary>Primeiro cartão da grade de projetos: cria um projeto novo.</summary>
+public sealed class NewProjectCard;
+
 public sealed class ProjectItem(ProjectEntry entry) : Notifying
 {
     private bool _confirming;
+    private Bitmap? _thumb;
+    public Bitmap? Thumb { get => _thumb; set { _thumb = value; Changed(nameof(Thumb)); } }
+    public string PresetName { get; init; } = "";
+    public string Edited => $"editado em {Entry.Project.Modified.ToLocalTime():dd/MM/yyyy HH:mm}" +
+                            (PresetName.Length > 0 ? $" · {PresetName}" : "");
     public ProjectEntry Entry { get; } = entry;
     public string Name => Entry.Project.Name;
     public string Details =>
-        $"{Entry.Project.Config.Photos.Count} fotos · {Entry.Project.Config.Format} · {Entry.Project.Config.Resolution}p · " +
-        $"editado em {Entry.Project.Modified.ToLocalTime():dd/MM/yyyy HH:mm}";
+        $"{Entry.Project.Config.Photos.Count} fotos · {Entry.Project.Config.Format} · {Entry.Project.Config.Resolution}p";
     public string Folder => Entry.Project.PhotosFolder.Length > 0 ? Entry.Project.PhotosFolder : "Sem pasta de fotos";
     public bool Confirming { get => _confirming; set { _confirming = value; Changed(nameof(DeleteLabel)); } }
     public string DeleteLabel => _confirming ? "Confirmar exclusão" : "Excluir";
@@ -147,6 +154,11 @@ public partial class MainWindow : Window
 
         PlayButton.Click += async (_, _) => await TogglePlayAsync();
         InitMenu();
+        UpdateEditorActions();
+        HomeSearch.TextChanged += (_, _) => ApplyHomeFilter();
+        HomeSort.SelectionChanged += (_, _) => { if (IsLoaded) ApplyHomeFilter(); };
+        HomeView.PropertyChanged += (_, e) => { if (e.Property == IsVisibleProperty) UpdateEditorActions(); };
+        NewProjectView.PropertyChanged += (_, e) => { if (e.Property == IsVisibleProperty) UpdateEditorActions(); };
         NewProjectButton.Click += (_, _) => ShowNewProject();
         NewFolderButton.Click += async (_, _) => await ChooseNewFolderAsync();
         NewProjectFolderButton.Click += async (_, _) => await ChooseProjectFolderAsync();
@@ -292,13 +304,62 @@ public partial class MainWindow : Window
         HomeView.IsVisible = true;
     }
 
+    private List<ProjectItem> _homeAll = [];
+    private readonly Dictionary<string, Bitmap> _homeThumbs = [];
+
+    private static string ThumbKey(ProjectEntry e) => e.Path + "|" + e.Project.Modified.Ticks;
+
     private void RefreshProjectList()
     {
-        var list = _store.List().Select(e => new ProjectItem(e)).ToList();
-        ProjectList.ItemsSource = list;
-        NoProjects.IsVisible = list.Count == 0;
+        _homeAll = _store.List().Select(e => new ProjectItem(e) { PresetName = _library.Find(e.Project.PresetId)?.Name ?? "" }).ToList();
+        foreach (var item in _homeAll)
+            if (_homeThumbs.TryGetValue(ThumbKey(item.Entry), out var cached)) item.Thumb = cached;
+        ApplyHomeFilter();
+        _ = LoadHomeThumbsAsync(_homeAll.Where(i => i.Thumb is null).ToList());
     }
 
+    /// <summary>Busca e ordenação da grade (sem reler os arquivos).</summary>
+    private void ApplyHomeFilter()
+    {
+        string query = HomeSearch.Text?.Trim() ?? "";
+        var shown = _homeAll.Where(p => query.Length == 0 || p.Name.Contains(query, StringComparison.CurrentCultureIgnoreCase));
+        shown = HomeSort.SelectedIndex == 1
+            ? shown.OrderBy(p => p.Name, StringComparer.CurrentCultureIgnoreCase)
+            : shown.OrderByDescending(p => p.Entry.Project.Modified);
+        var cards = new List<object> { new NewProjectCard() };
+        cards.AddRange(shown);
+        ProjectList.ItemsSource = cards;
+        NoProjects.IsVisible = shown.Count() == 0;
+        NoProjects.Text = _homeAll.Count == 0 ? "Nenhum projeto ainda. Clique em Novo projeto." : "Nenhum projeto com esse nome.";
+    }
+
+    /// <summary>Miniatura do projeto = a primeira foto dele.</summary>
+    private async Task LoadHomeThumbsAsync(List<ProjectItem> items)
+    {
+        foreach (var item in items)
+        {
+            var project = item.Entry.Project;
+            if (project.Config.Photos.Count == 0) continue;
+            string file = Path.Combine(project.PhotosFolder, project.Config.Photos[0].File);
+            Bitmap? thumb = await Task.Run(() =>
+            {
+                try
+                {
+                    using var sk = SlidePreview.Thumbnail(file, 560);
+                    return ToBitmap(sk, 85);
+                }
+                catch { return null; }
+            });
+            if (thumb is null) continue;
+            _homeThumbs[ThumbKey(item.Entry)] = thumb;
+            item.Thumb = thumb;
+        }
+    }
+
+    private void OnNewCardClick(object? sender, RoutedEventArgs e) => ShowNewProject();
+
+    private void UpdateEditorActions() =>
+        EditorActions.IsVisible = _project is not null && !HomeView.IsVisible && !NewProjectView.IsVisible;
     private string _newFolder = "";
     private string _newProjectFolder = "";
 

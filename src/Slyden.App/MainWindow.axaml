@@ -1,5 +1,6 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="using:Slyden.App"
         x:Class="Slyden.App.MainWindow"
         Title="Slyden" Width="1280" Height="800" MinWidth="980" MinHeight="640" WindowState="Maximized">
 
@@ -40,7 +41,7 @@
         </StackPanel>
         <TextBlock Grid.Column="1" x:Name="ProjectName" Classes="dim" HorizontalAlignment="Center"
                    VerticalAlignment="Center" Text="Nenhum projeto aberto" />
-        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+        <StackPanel Grid.Column="2" x:Name="EditorActions" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
           <TextBlock x:Name="SaveState" Classes="hint" VerticalAlignment="Center" />
           <Button x:Name="UndoButton" Classes="btn" Content="↶ Desfazer" IsEnabled="False" ToolTip.Tip="Desfazer (Ctrl+Z)" />
           <Button x:Name="RedoButton" Classes="btn" Content="↷ Refazer" IsEnabled="False" ToolTip.Tip="Refazer (Ctrl+Y)" />
@@ -421,8 +422,8 @@
 
     <!-- tela de projetos (cobre o editor) -->
     <Border x:Name="HomeView" Grid.Row="1" Grid.RowSpan="2" Background="#161618" Padding="40,28">
-      <Grid RowDefinitions="Auto,*" MaxWidth="900">
-        <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,20">
+      <Grid RowDefinitions="Auto,Auto,*" MaxWidth="1400">
+        <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,16">
           <StackPanel Spacing="4">
             <TextBlock Text="Projetos" FontSize="22" FontWeight="Medium" />
             <TextBlock Classes="hint" Text="Escolha um projeto para continuar ou crie um novo a partir de uma pasta de fotos." />
@@ -430,30 +431,54 @@
           </StackPanel>
           <Button Grid.Column="1" x:Name="NewProjectButton" Classes="btn primary" Content="Novo projeto" VerticalAlignment="Center" />
         </Grid>
-        <Grid Grid.Row="1">
-          <ListBox x:Name="ProjectList" Background="Transparent">
-            <ListBox.ItemTemplate>
-              <DataTemplate>
-                <Grid ColumnDefinitions="*,Auto" Margin="4,6" ColumnSpacing="16">
-                  <StackPanel Spacing="2" VerticalAlignment="Center">
-                    <TextBlock Text="{Binding Name}" FontSize="15" FontWeight="Medium" />
-                    <TextBlock Text="{Binding Details}" Classes="hint" />
-                    <TextBlock Text="{Binding Folder}" Classes="hint" TextWrapping="Wrap" />
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="10" Margin="0,0,0,14">
+          <TextBox x:Name="HomeSearch" Width="280" PlaceholderText="Buscar projeto…" />
+          <ComboBox x:Name="HomeSort" Width="190" SelectedIndex="0">
+            <ComboBoxItem Content="Mais recentes" />
+            <ComboBoxItem Content="Nome (A–Z)" />
+          </ComboBox>
+        </StackPanel>
+        <Grid Grid.Row="2">
+          <ListBox x:Name="ProjectList" Background="Transparent" SelectionMode="Single">
+            <ListBox.ItemsPanel>
+              <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+            </ListBox.ItemsPanel>
+            <ListBox.DataTemplates>
+              <DataTemplate DataType="local:NewProjectCard">
+                <Button Width="280" Height="270" Classes="btn" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
+                        Click="OnNewCardClick" BorderBrush="#55555B">
+                  <StackPanel Spacing="6" HorizontalAlignment="Center">
+                    <TextBlock Text="+" FontSize="44" HorizontalAlignment="Center" Foreground="#3B8BFF" />
+                    <TextBlock Text="Novo projeto" HorizontalAlignment="Center" />
                   </StackPanel>
-                  <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                    <Button Classes="btn primary" Content="Abrir" Tag="open" Click="OnProjectAction" />
-                    <Button Classes="btn" Content="Duplicar" Tag="duplicate" Click="OnProjectAction" />
-                    <Button Classes="btn" Content="{Binding DeleteLabel}" Tag="delete" Click="OnProjectAction" />
-                  </StackPanel>
-                </Grid>
+                </Button>
               </DataTemplate>
-            </ListBox.ItemTemplate>
+              <DataTemplate DataType="local:ProjectItem">
+                <Border Width="280" Background="#1F1F22" BorderBrush="#333338" BorderThickness="1" CornerRadius="8" ClipToBounds="True">
+                  <StackPanel>
+                    <Border Height="158" Background="#0F0F10">
+                      <Image Source="{Binding Thumb}" Stretch="UniformToFill" />
+                    </Border>
+                    <StackPanel Margin="12,10,12,12" Spacing="2">
+                      <TextBlock Text="{Binding Name}" FontSize="15" FontWeight="Medium" TextTrimming="CharacterEllipsis" />
+                      <TextBlock Text="{Binding Details}" Classes="hint" />
+                      <TextBlock Text="{Binding Edited}" Classes="hint" />
+                      <TextBlock Text="{Binding Folder}" Classes="hint" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Folder}" />
+                      <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,8,0,0">
+                        <Button Classes="btn primary" Content="Abrir" Tag="open" Click="OnProjectAction" />
+                        <Button Classes="btn" Content="Duplicar" Tag="duplicate" Click="OnProjectAction" />
+                        <Button Classes="btn" Content="{Binding DeleteLabel}" Tag="delete" Click="OnProjectAction" />
+                      </StackPanel>
+                    </StackPanel>
+                  </StackPanel>
+                </Border>
+              </DataTemplate>
+            </ListBox.DataTemplates>
           </ListBox>
-          <TextBlock x:Name="NoProjects" Classes="hint" HorizontalAlignment="Center" VerticalAlignment="Center"
+          <TextBlock x:Name="NoProjects" Classes="hint" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,40"
                      Text="Nenhum projeto ainda. Clique em Novo projeto." />
         </Grid>
-      </Grid>
-    </Border>
+      </Grid>    </Border>
 
     <!-- configurações do programa (valem para todos os projetos; cobrem tudo) -->
     <Border x:Name="SettingsView" Grid.Row="1" Grid.RowSpan="2" Background="#161618" IsVisible="False">
