@@ -93,6 +93,19 @@ public partial class MainWindow : Window
 
     private static readonly string[] FormatLabels = ["16:9 (YouTube)", "9:16 (Reels, Stories)", "1:1 (feed)"];
     private static readonly string[] FormatValues = ["16:9", "9:16", "1:1"];
+    private static readonly string[] QualityLabels = ["Rápida", "Equilibrada (recomendada)", "Compacta (H.265)"];
+
+    private ExportQuality ChosenQuality => (ExportQuality)Checked(ExportQualityChips).FirstOrDefault((int)ExportQuality.Balanced);
+
+    private void UpdateQualityHint() => ExportQualityHint.Text = ChosenQuality switch
+    {
+        ExportQuality.Fast => "Exporta o mais depressa. O arquivo sai maior; a qualidade é a mesma dos outros modos.",
+        ExportQuality.Compact => "Arquivo cerca de 60% menor que o da Rápida, com a mesma qualidade, e exporta mais devagar. " +
+                                 "Toca em iPhone, Mac, celulares e VLC; alguns programas e TVs antigas podem não abrir H.265.",
+        _ => "Arquivo cerca de 35% menor que o da Rápida, com a mesma qualidade, e toca em qualquer aparelho. " +
+             "Medido em um projeto de casamento em 1080p; em outros projetos a diferença pode variar.",
+    };
+
     private static readonly string[] ResolutionLabels = ["720p HD", "1080p Full HD", "1440p 2K", "2160p 4K"];
 
     private const int PreviewMaxSide = 1920;
@@ -157,6 +170,9 @@ public partial class MainWindow : Window
         };
         BuildChips(ExportFormatChips, FormatLabels, multi: false, _ => UpdateSummary());
         BuildChips(ExportResolutionChips, ResolutionLabels, multi: false, _ => UpdateSummary());
+        BuildChips(ExportQualityChips, QualityLabels, multi: false, _ => UpdateQualityHint());
+        SetChips(ExportQualityChips, [(int)ExportQuality.Balanced]);
+        UpdateQualityHint();
         BuildChips(NewFormatChips, FormatLabels, multi: false, _ => UpdateNewSizeInfo());
         BuildChips(NewResolutionChips, ResolutionLabels, multi: false, _ => UpdateNewSizeInfo());
 
@@ -1355,7 +1371,7 @@ public partial class MainWindow : Window
 
         var exportConfig = _cfg.Clone();
         (exportConfig.Format, exportConfig.Resolution) = exportChoice;
-        var request = new RenderRequest(_folder, output, exportConfig, _audio);
+        var request = new RenderRequest(_folder, output, exportConfig, _audio, Encoding: VideoEncoding.For(ChosenQuality));
         var watch = Stopwatch.StartNew();
         var progress = new Progress<RenderProgress>(p =>
         {

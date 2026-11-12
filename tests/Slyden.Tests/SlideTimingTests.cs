@@ -105,3 +105,13 @@ public class SlideTimingTests
         Assert.Throws<InvalidDataException>(cfg.Validate);
     }
 }
+public class ExportQualityTests
+{
+    [Fact]
+    public void Quality_profiles_map_to_the_measured_encoder_settings()
+    {
+        Assert.Equal(new VideoEncoding("libx264", 18, "veryfast"), VideoEncoding.For(ExportQuality.Fast));
+        Assert.Equal(new VideoEncoding("libx264", 22, "medium"), VideoEncoding.For(ExportQuality.Balanced));
+        Assert.Equal(new VideoEncoding("libx265", 22, "fast"), VideoEncoding.For(ExportQuality.Compact));
+    }
+}

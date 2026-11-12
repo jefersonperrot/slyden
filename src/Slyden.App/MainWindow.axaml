@@ -345,6 +345,9 @@
                 <WrapPanel x:Name="ExportResolutionChips" />
                 <TextBlock Classes="hint" TextWrapping="Wrap"
                            Text="Começa igual ao projeto, mas você pode exportar em outro formato ou resolução (ex.: um projeto em 4K também em 1080p) sem alterar o projeto." />
+                <TextBlock Classes="h" Text="QUALIDADE E TAMANHO" />
+                <WrapPanel x:Name="ExportQualityChips" />
+                <TextBlock x:Name="ExportQualityHint" Classes="hint" TextWrapping="Wrap" />
                 <StackPanel Orientation="Horizontal" Spacing="8">
                   <Button x:Name="ExportButton2" Classes="btn primary" Content="Exportar vídeo…" />
                   <Button x:Name="CancelExportButton" Classes="btn" Content="Cancelar exportação" IsVisible="False" />
